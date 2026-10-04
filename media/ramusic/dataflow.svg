@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620" role="img" aria-label="How spotify-tv-jam connects: a guest phone reaches the public tunnel to join the Jam, while the access token and transport controls stay on the local network">
+  <defs>
+    <style>
+      .bg{fill:#0f141b}
+      .t{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+      .title{font-size:21px;fill:#e8eef5;font-weight:700}
+      .sub{font-size:12.5px;fill:#7d8fa3}
+      .lbl{font-size:11px;fill:#7d8fa3;letter-spacing:.14em}
+      .box{font-size:13px;fill:#dce6f0}
+      .small{font-size:11px;fill:#8ea0b4}
+      .tiny{font-size:10.5px;fill:#8ea0b4}
+      .green{fill:#4ade80}
+      .blue{fill:#60a5fa}
+      .amber{fill:#fbbf24}
+      .red{fill:#f87171}
+      .card{fill:#18212c;stroke:#2b3947;stroke-width:1}
+      .cardG{fill:#13261c;stroke:#2f6b45;stroke-width:1}
+      .cardB{fill:#121f2e;stroke:#2d4d6e;stroke-width:1}
+      .cardR{fill:#241619;stroke:#6b2f35;stroke-width:1}
+      .zone{fill:none;stroke:#3b4b5c;stroke-width:1.5;stroke-dasharray:7 5}
+      .wire{stroke:#3b4b5c;stroke-width:1.5;fill:none}
+      .wireG{stroke:#4ade80;stroke-width:1.5;fill:none}
+      .wireB{stroke:#60a5fa;stroke-width:1.5;fill:none}
+    </style>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#3b4b5c"/></marker>
+    <marker id="bg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#4ade80"/></marker>
+    <marker id="bb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#60a5fa"/></marker>
+  </defs>
+
+  <rect class="bg" width="960" height="620"/>
+
+  <text class="t title" x="36" y="44">spotify-tv-jam — what is reachable from where</text>
+  <text class="t sub" x="36" y="66">guests join from mobile data; the token and the controls never leave the house</text>
+
+  <!-- guest side -->
+  <text class="t lbl" x="36" y="110">OUTSIDE THE NETWORK</text>
+  <rect class="card" x="36" y="124" width="196" height="92" rx="4"/>
+  <text class="t box" x="54" y="152">Guest phone</text>
+  <text class="t small" x="54" y="173">on mobile data</text>
+  <text class="t small green" x="54" y="193">scans the QR on the TV</text>
+
+  <path class="wireG" d="M232 170 L300 170" marker-end="url(#bg)"/>
+
+  <!-- tunnel -->
+  <rect class="cardG" x="300" y="124" width="214" height="92" rx="4"/>
+  <text class="t box green" x="318" y="152">localtunnel</text>
+  <text class="t small" x="318" y="173">random *.loca.lt URL</text>
+  <text class="t small" x="318" y="193">HTTPS + websockets only</text>
+
+  <!-- public routes -->
+  <rect class="cardG" x="548" y="110" width="376" height="120" rx="4"/>
+  <text class="t lbl green" x="566" y="134">PUBLIC THROUGH THE TUNNEL</text>
+  <text class="t small" x="566" y="158">· the dashboard view and /api/state</text>
+  <text class="t small" x="566" y="179">· /setup — read-only</text>
+  <text class="t small" x="566" y="200">· the /j Jam redirect</text>
+  <text class="t small" x="566" y="221">· so a guest can join without your Wi-Fi</text>
+
+  <path class="wireG" d="M514 170 L548 170" marker-end="url(#bg)"/>
+
+  <!-- home network zone -->
+  <rect class="zone" x="36" y="264" width="888" height="236" rx="6"/>
+  <text class="t lbl" x="54" y="290">THE HOUSE — LAN ONLY</text>
+
+  <!-- server -->
+  <rect class="cardB" x="60" y="306" width="250" height="110" rx="4"/>
+  <text class="t box blue" x="78" y="332">Node server</text>
+  <text class="t small" x="78" y="353">RAMTECH OS, booted from</text>
+  <text class="t small" x="78" y="372">the x86_64 image</text>
+  <text class="t small" x="78" y="397">tokens stored server-side</text>
+
+  <!-- TV -->
+  <rect class="card" x="356" y="306" width="226" height="110" rx="4"/>
+  <text class="t box" x="374" y="332">The TV</text>
+  <text class="t small" x="374" y="353">now playing · up next</text>
+  <text class="t small" x="374" y="372">who added each song</text>
+  <text class="t small amber" x="374" y="397">shows the 6-digit code</text>
+
+  <path class="wireB" d="M310 360 L356 360" marker-end="url(#bb)"/>
+
+  <!-- LAN-only routes -->
+  <rect class="cardR" x="628" y="306" width="276" height="110" rx="4"/>
+  <text class="t lbl red" x="646" y="330">NEVER OVER THE TUNNEL</text>
+  <text class="t small" x="646" y="354">· the Spotify access token</text>
+  <text class="t small" x="646" y="374">· play / pause / skip / volume</text>
+  <text class="t small" x="646" y="394">· remote sign-in screen-share</text>
+
+  <path class="wire" d="M582 360 L628 360" marker-end="url(#b)"/>
+
+  <!-- gate -->
+  <rect class="card" x="60" y="438" width="844" height="46" rx="4"/>
+  <text class="t box amber" x="78" y="466">Changing anything on /setup needs the 6-digit code shown only on the TV — five wrong tries locks the address out for five minutes.</text>
+
+  <!-- spotify -->
+  <rect class="cardG" x="356" y="528" width="248" height="62" rx="4"/>
+  <text class="t box green" x="374" y="554">Spotify</text>
+  <text class="t small" x="374" y="575">PKCE sign-in — no client secret</text>
+
+  <path class="wireG" d="M185 416 L185 558 L356 558" marker-end="url(#bg)"/>
+  <text class="t tiny" x="200" y="536">Web API + Playback SDK</text>
+
+  <rect class="card" x="628" y="528" width="276" height="62" rx="4"/>
+  <text class="t box" x="646" y="554">TV Jam</text>
+  <text class="t small" x="646" y="575">the TV as a Connect device</text>
+  <path class="wire" d="M604 558 L628 558" marker-end="url(#b)"/>
+</svg>
