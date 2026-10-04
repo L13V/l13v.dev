@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620" role="img" aria-label="Robot code architecture: commands drive subsystems, each subsystem behind an IO interface with real and simulated implementations, all logged through AdvantageKit">
+  <defs>
+    <style>
+      .bg{fill:#0f141b}
+      .t{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+      .title{font-size:21px;fill:#e8eef5;font-weight:700}
+      .sub{font-size:12.5px;fill:#7d8fa3}
+      .lbl{font-size:11px;fill:#7d8fa3;letter-spacing:.14em}
+      .box{font-size:13px;fill:#dce6f0}
+      .small{font-size:11px;fill:#8ea0b4}
+      .accent{fill:#4ade80}
+      .accent2{fill:#60a5fa}
+      .amber{fill:#fbbf24}
+      .card{fill:#18212c;stroke:#2b3947;stroke-width:1}
+      .cardA{fill:#13261c;stroke:#2f6b45;stroke-width:1}
+      .cardB{fill:#121f2e;stroke:#2d4d6e;stroke-width:1}
+      .cardC{fill:#241f14;stroke:#6b5425;stroke-width:1}
+      .wire{stroke:#3b4b5c;stroke-width:1.5;fill:none}
+      .wireA{stroke:#4ade80;stroke-width:1.5;fill:none}
+    </style>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3b4b5c"/>
+    </marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4ade80"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="960" height="620"/>
+
+  <text class="t title" x="36" y="44">2026_59 — robot code architecture</text>
+  <text class="t sub" x="36" y="66">org.ramtech.frc2026 · every subsystem has a simulated twin</text>
+
+  <!-- commands layer -->
+  <text class="t lbl" x="36" y="104">COMMANDS</text>
+  <rect class="card" x="36" y="116" width="888" height="62" rx="4"/>
+  <text class="t box" x="60" y="142">DriveCommands</text>
+  <text class="t box" x="210" y="142">ShootingCommand</text>
+  <text class="t box" x="382" y="142">LowerIntake</text>
+  <text class="t box" x="520" y="142">AutoSystemsCheck</text>
+  <text class="t small" x="60" y="163">teleop + PathPlanner autonomous routines</text>
+  <text class="t small amber" x="520" y="163">pre-match check of every mechanism</text>
+
+  <path class="wire" d="M480 178 L480 206" marker-end="url(#a)"/>
+
+  <!-- subsystems -->
+  <text class="t lbl" x="36" y="228">SUBSYSTEMS</text>
+  <rect class="card" x="36" y="240" width="888" height="92" rx="4"/>
+
+  <rect class="cardA" x="56" y="258" width="150" height="56" rx="3"/>
+  <text class="t box accent" x="70" y="280">Drive</text>
+  <text class="t small" x="70" y="299">4 × swerve module</text>
+
+  <rect class="cardA" x="222" y="258" width="128" height="56" rx="3"/>
+  <text class="t box accent" x="236" y="280">Intake</text>
+  <text class="t small" x="236" y="299">ground pickup</text>
+
+  <rect class="cardA" x="366" y="258" width="128" height="56" rx="3"/>
+  <text class="t box accent" x="380" y="280">Indexer</text>
+  <text class="t small" x="380" y="299">feed to shooter</text>
+
+  <rect class="cardA" x="510" y="258" width="258" height="56" rx="3"/>
+  <text class="t box accent" x="524" y="280">Shooter</text>
+  <text class="t small" x="524" y="299">Flywheel + Hood · ShotCalculator</text>
+
+  <rect class="card" x="784" y="258" width="122" height="56" rx="3"/>
+  <text class="t box" x="798" y="280">LED</text>
+  <text class="t small" x="798" y="299">status output</text>
+
+  <path class="wireA" d="M480 332 L480 366" marker-end="url(#ag)"/>
+  <text class="t small accent" x="494" y="354">each talks only to an interface</text>
+
+  <!-- IO layer -->
+  <text class="t lbl" x="36" y="390">IO LAYER — THE SWAP POINT</text>
+  <rect class="card" x="36" y="402" width="888" height="118" rx="4"/>
+
+  <rect class="cardB" x="60" y="420" width="250" height="38" rx="3"/>
+  <text class="t box accent2" x="76" y="444">ModuleIO · GyroIO · IntakeIO …</text>
+  <text class="t small" x="76" y="474">interface — what the subsystem sees</text>
+
+  <path class="wire" d="M185 492 L185 500 L120 500" marker-end="url(#a)"/>
+  <path class="wire" d="M185 492 L185 500 L250 500" marker-end="url(#a)"/>
+
+  <rect class="cardB" x="360" y="420" width="262" height="80" rx="3"/>
+  <text class="t box accent2" x="376" y="444">…IOTalonFX / …IOTalonFXS</text>
+  <text class="t small" x="376" y="464">real hardware — Phoenix 6</text>
+  <text class="t small" x="376" y="484">GyroIONavX · GyroIOPigeon2</text>
+
+  <rect class="cardB" x="646" y="420" width="256" height="80" rx="3"/>
+  <text class="t box accent2" x="662" y="444">…IOSim</text>
+  <text class="t small" x="662" y="464">simulation — no robot needed</text>
+  <text class="t small" x="662" y="484">bench-test commands and logic</text>
+
+  <!-- bottom bar -->
+  <rect class="cardC" x="36" y="540" width="580" height="54" rx="4"/>
+  <text class="t box amber" x="56" y="563">AdvantageKit</text>
+  <text class="t small" x="56" y="582">logs every IO input — a match replays offline, exactly as it ran</text>
+
+  <rect class="cardC" x="632" y="540" width="292" height="54" rx="4"/>
+  <text class="t box amber" x="652" y="563">PhoenixOdometryThread</text>
+  <text class="t small" x="652" y="582">pose sampled off the main loop</text>
+</svg>
