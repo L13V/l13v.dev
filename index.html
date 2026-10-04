@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="en" data-skin="crt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Liev Dorfman</title>
+<meta name="description" content="Robotics software and infrastructure. FRC Team 59 (RAMTECH) robot code, a self-hosted homelab, drone swarms, and a Linux image that boots into a TV dashboard.">
+<meta name="author" content="Liev Dorfman">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://l13v.dev">
+<meta property="og:title" content="Liev Dorfman &mdash; robotics software &amp; infrastructure">
+<meta property="og:description" content="FRC Team 59 (RAMTECH) robot code, a self-hosted homelab, drone swarms, and a Linux image that boots into a TV dashboard.">
+<meta name="theme-color" content="#060d09">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2032%2032%22%3E%3Crect%20width=%2232%22%20height=%2232%22%20rx=%226%22%20fill=%22%23060d09%22/%3E%3Ctext%20x=%2216%22%20y=%2223%22%20font-family=%22monospace%22%20font-size=%2219%22%20font-weight=%22700%22%20fill=%22%233bf07a%22%20text-anchor=%22middle%22%3E%26gt;%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=VT323&family=Instrument+Serif&family=Figtree:wght@400;500;600;700&family=Press+Start+2P&display=swap">
+<style>
+/* Layout: one column, 1080px max. Sticky skin switcher top-right.
+   Three complete visual worlds selected by [data-skin] on :root. */
+:root{
+  --bg:#060d09; --surface:#0b1510; --surface-2:#102019;
+  --fg:#d9f7e3; --fg-dim:#78a98b; --fg-faint:#4d7560;
+  --accent:#3bf07a; --accent-2:#ffb000;
+  --line:rgba(59,240,122,.20); --line-strong:rgba(59,240,122,.42);
+  --radius:3px; --border-w:1px;
+  --font-display:"VT323","IBM Plex Mono",ui-monospace,monospace;
+  --font-body:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --font-ui:"IBM Plex Mono",ui-monospace,monospace;
+  --shadow:0 0 0 1px rgba(59,240,122,.10), 0 0 30px rgba(59,240,122,.05);
+  --shadow-hover:0 0 0 1px rgba(59,240,122,.35), 0 0 36px rgba(59,240,122,.10);
+  --glow:0 0 7px rgba(59,240,122,.40);
+  --display-tracking:.01em; --display-weight:400; --display-case:uppercase;
+  --label-case:uppercase; --label-tracking:.16em;
+  --scan:.055; --grain:0;
+  --h1:clamp(3.4rem,13vw,7.5rem); --h2:clamp(1.9rem,5vw,2.9rem);
+  --card-pad:1.4rem;
+  color-scheme:dark;
+}
+:root[data-skin="minimal"]{
+  --bg:#fcfcfb; --surface:#ffffff; --surface-2:#f4f5f7;
+  --fg:#15181d; --fg-dim:#5b636f; --fg-faint:#8b93a1;
+  --accent:#1f5fd0; --accent-2:#0f766e;
+  --line:rgba(21,24,29,.11); --line-strong:rgba(21,24,29,.22);
+  --radius:10px; --border-w:1px;
+  --font-display:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-ui:"Figtree",system-ui,sans-serif;
+  --shadow:0 1px 2px rgba(16,20,28,.04), 0 8px 24px -12px rgba(16,20,28,.10);
+  --shadow-hover:0 1px 2px rgba(16,20,28,.05), 0 16px 40px -16px rgba(16,20,28,.16);
+  --glow:none;
+  --display-tracking:-.015em; --display-weight:400; --display-case:none;
+  --label-case:uppercase; --label-tracking:.11em;
+  --scan:0; --grain:0;
+  --h1:clamp(3rem,9vw,5.6rem); --h2:clamp(1.7rem,4vw,2.4rem);
+  --card-pad:1.6rem;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root[data-skin="minimal"]:not([data-theme="light"]){
+    --bg:#0e1013; --surface:#15181c; --surface-2:#1b1f24;
+    --fg:#eceef1; --fg-dim:#a0a8b4; --fg-faint:#6e7684;
+    --accent:#6ea8ff; --accent-2:#4fd1c5;
+    --line:rgba(236,238,241,.12); --line-strong:rgba(236,238,241,.24);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.6);
+    --shadow-hover:0 1px 2px rgba(0,0,0,.5), 0 18px 46px -18px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+}
+:root[data-skin="minimal"][data-theme="dark"]{
+  --bg:#0e1013; --surface:#15181c; --surface-2:#1b1f24;
+  --fg:#eceef1; --fg-dim:#a0a8b4; --fg-faint:#6e7684;
+  --accent:#6ea8ff; --accent-2:#4fd1c5;
+  --line:rgba(236,238,241,.12); --line-strong:rgba(236,238,241,.24);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.6);
+  --shadow-hover:0 1px 2px rgba(0,0,0,.5), 0 18px 46px -18px rgba(0,0,0,.7);
+  color-scheme:dark;
+}
+:root[data-skin="arcade"]{
+  --bg:#140d2b; --surface:#1d1442; --surface-2:#271a57;
+  --fg:#f4f1ff; --fg-dim:#b3a6e6; --fg-faint:#8d7fc8;
+  --accent:#ff2e63; --accent-2:#08d9d6;
+  --line:rgba(255,217,61,.34); --line-strong:#ffd93d;
+  --radius:0px; --border-w:3px;
+  --font-display:"Press Start 2P","IBM Plex Mono",monospace;
+  --font-body:"IBM Plex Mono",ui-monospace,monospace;
+  --font-ui:"Press Start 2P","IBM Plex Mono",monospace;
+  --shadow:5px 5px 0 #08d9d6;
+  --shadow-hover:5px 5px 0 #ff2e63;
+  --glow:0 0 10px rgba(255,46,99,.55);
+  --display-tracking:0em; --display-weight:400; --display-case:uppercase;
+  --label-case:uppercase; --label-tracking:.06em;
+  --scan:0; --grain:.05;
+  --h1:clamp(1.9rem,7vw,4.2rem); --h2:clamp(1.1rem,3.2vw,1.7rem);
+  --card-pad:1.4rem;
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%}
+body{
+  margin:0; min-height:100%;
+  background:var(--bg); color:var(--fg);
+  font-family:var(--font-body);
+  font-size:1rem; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  transition:background-color .35s ease, color .35s ease;
+}
+img{max-width:100%}
+a{color:var(--accent); text-decoration:none}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px}
+::selection{background:var(--accent); color:var(--bg)}
+
+/* CRT scanlines + arcade grain, token-driven so each skin opts in */
+body::before{
+  content:""; position:fixed; inset:0; z-index:9000; pointer-events:none;
+  background:repeating-linear-gradient(to bottom,
+    rgba(0,0,0,.5) 0 1px, rgba(0,0,0,0) 1px 3px);
+  opacity:var(--scan); transition:opacity .35s ease;
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:9001; pointer-events:none;
+  opacity:var(--grain); transition:opacity .35s ease;
+  background-image:radial-gradient(rgba(255,255,255,.5) .5px, transparent .5px);
+  background-size:3px 3px;
+}
+
+.wrap{max-width:1080px; margin:0 auto; padding-inline:clamp(1rem,4vw,2.5rem)}
+
+/* skin switcher */
+.switcher{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:9100;
+  display:flex; justify-content:flex-end;
+  padding-block:.9rem; padding-inline:clamp(1rem,4vw,2.5rem);
+  max-width:1080px; margin:0 auto;
+}
+.switcher-inner{
+  display:flex; gap:.25rem; align-items:center;
+  background:var(--surface); border:var(--border-w) solid var(--line);
+  border-radius:var(--radius); padding:.3rem; box-shadow:var(--shadow);
+}
+.switcher button{
+  font-family:var(--font-ui); font-size:.64rem;
+  text-transform:var(--label-case); letter-spacing:var(--label-tracking);
+  color:var(--fg-dim); background:none; border:0; cursor:pointer;
+  padding:.45rem .7rem; border-radius:calc(var(--radius) - 1px);
+  transition:color .2s, background-color .2s;
+  min-width:0; white-space:nowrap;
+}
+.switcher button:hover{color:var(--fg)}
+.switcher button[aria-pressed="true"]{
+  background:var(--accent); color:var(--bg); font-weight:600;
+}
+:root[data-skin="arcade"] .switcher button[aria-pressed="true"]{color:#fff}
+
+/* hero */
+.hero{padding-block:clamp(1.5rem,5vw,3.5rem) clamp(3rem,8vw,5rem)}
+.eyebrow{
+  font-family:var(--font-ui); font-size:.7rem;
+  text-transform:var(--label-case); letter-spacing:var(--label-tracking);
+  color:var(--accent); margin:0 0 1.2rem;
+  display:flex; align-items:center; gap:.6rem; flex-wrap:wrap;
+}
+.eyebrow::before{
+  content:""; width:1.8rem; height:var(--border-w);
+  background:var(--accent); flex:none;
+}
+:root[data-skin="arcade"] .eyebrow{font-size:.56rem; line-height:1.9}
+h1{
+  font-family:var(--font-display); font-weight:var(--display-weight);
+  font-size:var(--h1); line-height:.95; letter-spacing:var(--display-tracking);
+  text-transform:var(--display-case);
+  margin:0 0 1.2rem; text-wrap:balance;
+  text-shadow:var(--glow);
+}
+:root[data-skin="arcade"] h1{line-height:1.35; text-shadow:4px 4px 0 var(--accent-2)}
+:root[data-skin="minimal"] h1{text-shadow:none}
+.lede{
+  font-size:clamp(1.02rem,2.2vw,1.22rem); line-height:1.7;
+  color:var(--fg-dim); max-width:62ch; margin:0 0 .9rem;
+}
+.lede strong{color:var(--fg); font-weight:600}
+:root[data-skin="arcade"] .lede{font-size:.92rem; line-height:1.9}
+.prompt{
+  font-family:var(--font-body); color:var(--accent-2);
+  font-size:.9rem; margin:0 0 .6rem;
+}
+.cursor{
+  display:inline-block; width:.55em; height:1.05em; vertical-align:-.16em;
+  background:var(--accent); margin-left:.15em; animation:blink 1.1s step-end infinite;
+}
+@keyframes blink{50%{opacity:0}}
+
+.cta{display:flex; gap:.7rem; flex-wrap:wrap; margin-top:2rem}
+.btn{
+  font-family:var(--font-ui); font-size:.74rem; font-weight:600;
+  text-transform:var(--label-case); letter-spacing:var(--label-tracking);
+  padding:.8rem 1.25rem; border-radius:var(--radius);
+  border:var(--border-w) solid var(--accent); color:var(--accent);
+  background:transparent;
+  transition:transform .18s, background-color .2s, color .2s, box-shadow .2s;
+  display:inline-flex; align-items:center; gap:.5rem;
+}
+.btn:hover{background:var(--accent); color:var(--bg); transform:translateY(-2px)}
+.btn-solid{background:var(--accent); color:var(--bg)}
+.btn-solid:hover{background:transparent; color:var(--accent)}
+:root[data-skin="arcade"] .btn{font-size:.6rem; box-shadow:4px 4px 0 var(--accent-2)}
+:root[data-skin="arcade"] .btn:hover{color:#fff; box-shadow:2px 2px 0 var(--accent-2)}
+:root[data-skin="arcade"] .btn-solid{color:#fff}
+
+/* stats strip */
+.stats{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+  gap:var(--border-w); border:var(--border-w) solid var(--line);
+  border-radius:var(--radius); overflow:hidden; background:var(--line);
+  margin-block:0 clamp(3rem,7vw,4.5rem);
+}
+.stat{background:var(--surface); padding:1.2rem var(--card-pad); min-width:0}
+.stat-num{
+  font-family:var(--font-display); font-size:clamp(1.6rem,4vw,2.3rem);
+  line-height:1; color:var(--accent); font-variant-numeric:tabular-nums;
+  display:block; margin-bottom:.45rem; text-shadow:var(--glow);
+}
+:root[data-skin="arcade"] .stat-num{font-size:clamp(1rem,2.6vw,1.4rem); text-shadow:3px 3px 0 var(--accent-2)}
+:root[data-skin="minimal"] .stat-num{text-shadow:none}
+.stat-label{
+  font-family:var(--font-ui); font-size:.64rem; color:var(--fg-faint);
+  text-transform:var(--label-case); letter-spacing:var(--label-tracking);
+}
+:root[data-skin="arcade"] .stat-label{font-size:.5rem; line-height:1.8}
+
+/* sections */
+section{padding-block:clamp(2rem,6vw,3rem)}
+.sec-head{
+  display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap;
+  margin-bottom:1.8rem; padding-bottom:1rem;
+  border-bottom:var(--border-w) solid var(--line);
+}
+h2{
+  font-family:var(--font-display); font-weight:var(--display-weight);
+  font-size:var(--h2); line-height:1.1; letter-spacing:var(--display-tracking);
+  text-transform:var(--display-case); margin:0; text-wrap:balance;
+}
+.sec-note{
+  font-family:var(--font-ui); font-size:.68rem; color:var(--fg-faint);
+  text-transform:var(--label-case); letter-spacing:var(--label-tracking);
+  margin-left:auto;
+}
+:root[data-skin="arcade"] .sec-note{font-size:.5rem}
+
+/* project cards */
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:1.1rem}
+.card{
+  display:flex; flex-direction:column; gap:.75rem; min-width:0;
+  background:var(--surface); border:var(--border-w) solid var(--line);
+  border-radius:var(--radius); padding:var(--card-pad);
+  box-shadow:var(--shadow); color:inherit;
+  transition:transform .2s, box-shadow .2s, border-color .2s;
+}
+.card:hover{transform:translateY(-3px); box-shadow:var(--shadow-hover); border-color:var(--line-strong)}
+.card-top{display:flex; align-items:center; gap:.6rem; flex-wrap:wrap}
+.card h3{
+  font-family:var(--font-ui); font-size:.95rem; font-weight:600;
+  margin:0; color:var(--fg); letter-spacing:0; min-width:0; overflow-wrap:break-word;
+}
+:root[data-skin="arcade"] .card h3{font-size:.68rem; line-height:1.6}
+:root[data-skin="minimal"] .card h3{font-size:1.05rem}
+.card p{margin:0; font-size:.88rem; line-height:1.65; color:var(--fg-dim)}
+:root[data-skin="arcade"] .card p{font-size:.8rem; line-height:1.85}
+.chip{
+  font-family:var(--font-ui); font-size:.58rem; font-weight:600;
+  text-transform:var(--label-case); letter-spacing:var(--label-tracking);
+  padding:.25rem .5rem; border-radius:calc(var(--radius) - 1px);
+  border:var(--border-w) solid var(--line-strong); color:var(--fg-faint);
+  white-space:nowrap; flex:none; line-height:1.5;
+}
+.chip-live{color:var(--accent-2); border-color:var(--accent-2)}
+.chip-fork{opacity:.8}
+.tags{display:flex; gap:.4rem; flex-wrap:wrap; margin-top:auto; padding-top:.3rem}
+.tag{
+  font-family:var(--font-body); font-size:.68rem; color:var(--fg-faint);
+  background:var(--surface-2); border-radius:calc(var(--radius) - 1px);
+  padding:.2rem .5rem; white-space:nowrap;
+}
+.meta{
+  display:flex; gap:1rem; flex-wrap:wrap; font-size:.68rem;
+  color:var(--fg-faint); font-variant-numeric:tabular-nums;
+  font-family:var(--font-body);
+}
+
+/* stack lists */
+.cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1.6rem}
+.col h4{
+  font-family:var(--font-ui); font-size:.66rem; color:var(--accent);
+  text-transform:var(--label-case); letter-spacing:var(--label-tracking);
+  margin:0 0 .9rem; padding-bottom:.6rem;
+  border-bottom:var(--border-w) solid var(--line);
+}
+:root[data-skin="arcade"] .col h4{font-size:.54rem; line-height:1.8}
+.col ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.5rem}
+.col li{font-size:.86rem; color:var(--fg-dim); display:flex; gap:.6rem; min-width:0}
+.col li::before{content:"\25B8"; color:var(--accent-2); flex:none}
+:root[data-skin="minimal"] .col li::before{content:"\2014"; color:var(--fg-faint)}
+.col li b{color:var(--fg); font-weight:600}
+
+/* footer */
+footer{
+  margin-top:clamp(3rem,8vw,5rem);
+  border-top:var(--border-w) solid var(--line);
+  padding-block:2.5rem calc(2.5rem + env(safe-area-inset-bottom,0px));
+}
+.foot-row{display:flex; gap:1.5rem; flex-wrap:wrap; align-items:center; justify-content:space-between}
+.foot-links{display:flex; gap:1.2rem; flex-wrap:wrap}
+.foot-links a{
+  font-family:var(--font-ui); font-size:.7rem; color:var(--fg-dim);
+  text-transform:var(--label-case); letter-spacing:var(--label-tracking);
+  transition:color .2s;
+}
+.foot-links a:hover{color:var(--accent)}
+.sig{font-size:.72rem; color:var(--fg-faint); font-family:var(--font-body)}
+:root[data-skin="arcade"] .foot-links a{font-size:.56rem}
+
+/* skin-specific flourishes */
+.only-crt,.only-arcade,.only-minimal{display:none}
+:root[data-skin="crt"] .only-crt{display:block}
+:root[data-skin="arcade"] .only-arcade{display:block}
+:root[data-skin="minimal"] .only-minimal{display:block}
+.marquee{
+  font-family:var(--font-ui); font-size:.6rem; color:var(--accent-2);
+  text-transform:uppercase; letter-spacing:.2em; margin:0 0 1rem;
+}
+.rule-art{
+  font-family:var(--font-body); color:var(--line-strong);
+  font-size:.7rem; letter-spacing:.1em; margin:0 0 1rem; overflow:hidden;
+  white-space:nowrap;
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important; transition:none!important}
+  body::before{opacity:0}
+}
+@media (max-width:560px){
+  .sec-note{margin-left:0; width:100%}
+  .switcher button{padding:.4rem .5rem; font-size:.58rem}
+}
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <div class="switcher-inner" role="group" aria-label="Visual theme">
+    <button type="button" data-set="crt" aria-pressed="true">Terminal</button>
+    <button type="button" data-set="minimal" aria-pressed="false">Minimal</button>
+    <button type="button" data-set="arcade" aria-pressed="false">Arcade</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">Robotics software &middot; Infrastructure &middot; FRC 59 RAMTECH</p>
+
+    <p class="prompt only-crt">liev@dorfman.net:~$ whoami<span class="cursor"></span></p>
+    <p class="marquee only-arcade">&#9656;&#9656; insert coin &mdash; 1 player start &#9666;&#9666;</p>
+
+    <h1>Liev Dorfman</h1>
+
+    <p class="lede">
+      I write the software that makes physical things move, then build the
+      infrastructure that keeps it running. <strong>Competition robots in Java.</strong>
+      A Linux image that boots straight into a TV dashboard. DNS that manages
+      itself. Drone swarms that fly on cue.
+    </p>
+    <p class="lede">
+      Most of what I make ends with something happening in a room &mdash; a drivetrain
+      turning, a drone lifting off, a screen coming to life.
+    </p>
+
+    <div class="cta">
+      <a class="btn btn-solid" href="https://github.com/L13V">GitHub</a>
+      <a class="btn" href="https://dorfman.net">dorfman.net</a>
+      <a class="btn" href="#work">See the work</a>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><span class="stat-num" id="s-repos">12</span><span class="stat-label">Public repos</span></div>
+    <div class="stat"><span class="stat-num" id="s-years">6</span><span class="stat-label">Years on GitHub</span></div>
+    <div class="stat"><span class="stat-num">4</span><span class="stat-label">Robot seasons</span></div>
+    <div class="stat"><span class="stat-num" id="s-lang">Java</span><span class="stat-label">Most-used language</span></div>
+  </div>
+
+  <section id="work">
+    <div class="sec-head">
+      <h2>Selected work</h2>
+      <span class="sec-note" id="live-note">Static snapshot</span>
+    </div>
+    <div class="grid" id="projects"></div>
+  </section>
+
+  <section id="stack">
+    <div class="sec-head">
+      <h2>What I build with</h2>
+      <span class="sec-note">Day to day</span>
+    </div>
+    <div class="cols">
+      <div class="col">
+        <h4>Robotics</h4>
+        <ul>
+          <li><b>Java</b> &mdash; every competition robot</li>
+          <li><b>WPILib</b> + <b>AdvantageKit</b></li>
+          <li><b>AdvantageScope</b> for telemetry review</li>
+          <li>Swerve drive tuning &amp; calibration</li>
+          <li>Gradle, vendordeps, CAN devices</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>Infrastructure</h4>
+        <ul>
+          <li><b>Proxmox VE</b> &mdash; the whole homelab</li>
+          <li><b>Docker</b> for everything shippable</li>
+          <li><b>Linux</b> (Debian) + shell automation</li>
+          <li><b>RustDesk</b> self-hosted remote access</li>
+          <li><b>ntfy</b> push notifications, DNS tooling</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>Software &amp; hardware</h4>
+        <ul>
+          <li><b>JavaScript</b> / <b>Node.js</b> dashboards</li>
+          <li><b>Python</b> for control &amp; scripting</li>
+          <li><b>Bash</b> and <b>PowerShell</b></li>
+          <li>3D printing &mdash; Bambu Lab, OrcaSlicer</li>
+          <li>DJI Tello EDU drone swarms</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="bench">
+    <div class="sec-head">
+      <h2>Also on the bench</h2>
+      <span class="sec-note">Interests &amp; side work</span>
+    </div>
+    <div class="cols">
+      <div class="col">
+        <h4>FRC field systems</h4>
+        <ul>
+          <li>Cheesy Arena &amp; Freezy Arena field management</li>
+          <li>Scoring, AV and event network setup</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>Self-hosting</h4>
+        <ul>
+          <li>Proxmox helper scripts and LXC templates</li>
+          <li>Jellyfin, media automation, custom theming</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>Fabrication</h4>
+        <ul>
+          <li>Printed robot parts and fixtures</li>
+          <li>Custom slicer profiles for Bambu hardware</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p class="rule-art only-crt">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</p>
+    <p class="rule-art only-arcade">&#9604;&#9604;&#9604;&#9604;&#9604;&#9604;&#9604;&#9604; game over? no &mdash; continue &#9604;&#9604;&#9604;&#9604;&#9604;&#9604;&#9604;&#9604;</p>
+    <div class="foot-row">
+      <span class="sig">&copy; <span id="year">2026</span> Liev Dorfman &mdash; l13v.dev</span>
+      <nav class="foot-links">
+        <a href="https://github.com/L13V">GitHub</a>
+        <a href="https://dorfman.net">dorfman.net</a>
+        <a href="#work">Work</a>
+        <a href="#stack">Stack</a>
+      </nav>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- skin switching ---------- */
+  var root = document.documentElement;
+  var KEY = "l13v-skin";
+  var buttons = Array.prototype.slice.call(document.querySelectorAll(".switcher button"));
+  var THEME_COLORS = { crt: "#060d09", minimal: "#fcfcfb", arcade: "#140d2b" };
+
+  function setSkin(skin, persist) {
+    root.setAttribute("data-skin", skin);
+    buttons.forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-set") === skin));
+    });
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta && THEME_COLORS[skin]) meta.setAttribute("content", THEME_COLORS[skin]);
+    if (persist) { try { localStorage.setItem(KEY, skin); } catch (e) {} }
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener("click", function () {
+      setSkin(b.getAttribute("data-set"), true);
+    });
+  });
+
+  try {
+    var saved = localStorage.getItem(KEY);
+    if (saved && THEME_COLORS[saved]) setSkin(saved, false);
+  } catch (e) {}
+
+  /* ---------- project data: renders with no network ---------- */
+  var PROJECTS = [
+    {
+      repo: "2026_59",
+      title: "FRC 59 — 2026 robot",
+      blurb: "Competition robot code for this season. Swerve drivetrain on WPILib with AdvantageKit logging, plus AdvantageScope-driven swerve calibration.",
+      tags: ["Java", "WPILib", "AdvantageKit", "Swerve"],
+      badge: "Active season"
+    },
+    {
+      repo: "ramusic",
+      title: "spotify-tv-jam + RAMTECH OS",
+      blurb: "A full-screen listening-party dashboard for a TV: live now-playing art, a queue tagged with who added each song, and an auto-generated Jam QR code. Ships with a bootable Linux image, a device-manager UI and a one-click USB writer.",
+      tags: ["JavaScript", "Node.js", "Docker", "Shell"],
+      badge: "Full stack"
+    },
+    {
+      repo: "Tello-EDUs",
+      title: "Drone swarm choreography",
+      blurb: "Menu-driven control for a fleet of DJI Tello EDU drones — scripted liftoff and synchronized aerial shows.",
+      tags: ["Python", "Swarm", "DJI SDK"]
+    },
+    {
+      repo: "dorf-dns",
+      title: "dorf-dns",
+      blurb: "Shell tooling that manages DNS records from the command line instead of clicking through a provider dashboard.",
+      tags: ["Shell", "DNS", "Automation"]
+    },
+    {
+      repo: "2025_59_V2",
+      title: "FRC 59 — 2025 robot",
+      blurb: "Last season's competition code, alongside the offseason rewrites that followed in OS2025_59 and 2025-Mango.",
+      tags: ["Java", "WPILib"]
+    },
+    {
+      repo: "rdgen",
+      title: "rdgen",
+      blurb: "Custom client generator for RustDesk — part of a self-hosted remote-access setup.",
+      tags: ["HTML", "RustDesk", "Self-hosted"],
+      fork: true
+    }
+  ];
+
+  var grid = document.getElementById("projects");
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) { n.className = cls; }
+    if (text !== undefined && text !== null) { n.textContent = text; }
+    return n;
+  }
+
+  function render() {
+    grid.textContent = "";
+    PROJECTS.forEach(function (p) {
+      var a = el("a", "card");
+      a.href = "https://github.com/L13V/" + p.repo;
+      a.rel = "noopener";
+
+      var top = el("div", "card-top");
+      top.appendChild(el("h3", null, p.title));
+      if (p.badge) { top.appendChild(el("span", "chip chip-live", p.badge)); }
+      if (p.fork) { top.appendChild(el("span", "chip chip-fork", "Fork")); }
+      a.appendChild(top);
+
+      a.appendChild(el("p", null, p.blurb));
+
+      var tags = el("div", "tags");
+      p.tags.forEach(function (t) { tags.appendChild(el("span", "tag", t)); });
+      a.appendChild(tags);
+
+      var meta = el("div", "meta");
+      meta.appendChild(el("span", null, p.repo));
+      if (p.stars) { meta.appendChild(el("span", null, "★ " + p.stars)); }
+      if (p.updated) { meta.appendChild(el("span", null, "updated " + p.updated)); }
+      a.appendChild(meta);
+
+      grid.appendChild(a);
+    });
+  }
+
+  render();
+  document.getElementById("year").textContent = String(new Date().getFullYear());
+  document.getElementById("s-years").textContent =
+    String(Math.max(1, new Date().getFullYear() - 2020));
+
+  /* ---------- optional live enhancement ----------
+     Works on the deployed site. Where the network is
+     blocked it is skipped silently, so the page above
+     is always complete on its own. */
+  var CACHE = "l13v-repos-v1";
+
+  function applyRepos(list) {
+    if (!Array.isArray(list) || !list.length) { return; }
+    var byName = {};
+    list.forEach(function (r) { byName[r.name] = r; });
+
+    PROJECTS.forEach(function (p) {
+      var r = byName[p.repo];
+      if (!r) { return; }
+      if (r.stargazers_count > 0) { p.stars = r.stargazers_count; }
+      var when = r.pushed_at || r.updated_at;
+      if (when) {
+        p.updated = new Date(when).toLocaleDateString("en-US", {
+          month: "short", year: "numeric"
+        });
+      }
+    });
+
+    document.getElementById("s-repos").textContent = String(list.length);
+
+    var counts = {};
+    list.forEach(function (r) {
+      if (!r.fork && r.language) { counts[r.language] = (counts[r.language] || 0) + 1; }
+    });
+    var top = Object.keys(counts).sort(function (a, b) {
+      return counts[b] - counts[a];
+    })[0];
+    if (top) { document.getElementById("s-lang").textContent = top; }
+
+    document.getElementById("live-note").textContent = "Live from GitHub";
+    render();
+  }
+
+  try {
+    var cached = JSON.parse(localStorage.getItem(CACHE) || "null");
+    if (cached && Date.now() - cached.t < 6 * 3600 * 1000) { applyRepos(cached.d); }
+  } catch (e) {}
+
+  if (typeof fetch === "function") {
+    fetch("https://api.github.com/users/L13V/repos?per_page=100&sort=updated")
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error("http")); })
+      .then(function (d) {
+        applyRepos(d);
+        try {
+          localStorage.setItem(CACHE, JSON.stringify({
+            t: Date.now(),
+            d: d.map(function (r) {
+              return {
+                name: r.name,
+                fork: r.fork,
+                language: r.language,
+                stargazers_count: r.stargazers_count,
+                pushed_at: r.pushed_at
+              };
+            })
+          }));
+        } catch (e) {}
+      })
+      .catch(function () { /* keep the static snapshot */ });
+  }
+})();
+</script>
+</body>
+</html>
