@@ -27,12 +27,12 @@ const SHOW_PLACEHOLDERS = true;
 const img = (file, caption) => ({ type: "image", file, caption });
 const vid = (file, caption, poster) => ({ type: "video", file, caption, poster });
 const yt = (id, caption) => ({ type: "youtube", id, caption });
-/* mdl() is a live 3D model (.glb) you can orbit. The third argument is an
-   options object, all keys optional:
+/* mdl() is a live 3D model (.glb) you can orbit. Models are lit exactly the way
+   the Ramtech-Web CAD viewer lights them, so nothing needs configuring.
+   The third argument is an options object if you ever need to deviate:
      poster    still image shown while it loads, e.g. "robot-poster.png"
-     exposure  brightness. Lower is darker. 1 = as the model was authored,
-               0.4 is noticeably moodier, 0.2 is very dark.
-     env       how much the neutral studio light fills it in, 0–1.
+     exposure  overrides the calibrated 0.45. Lower is darker.
+     env       how much the studio light fills it in, 0–1. Default 1.
    Keep .glb files under ~6 MB — see media/README.md. */
 const mdl = (file, caption, opts) =>
   Object.assign({ type: "model", file, caption }, opts || {});
@@ -93,8 +93,7 @@ const PROJECTS = [
       /* Live 3D — drag to orbit, scroll to zoom.
          Rico, the 2026 robot. Compressed from 12.6 MB to 4.9 MB; see
          media/README.md for the exact command if you re-export it. */
-      mdl("rico-2026.glb", "Rico — the 2026 robot. Drag to orbit, scroll to zoom",
-          { exposure: 0.38, env: 0.35 }),
+      mdl("rico-2026.glb", "Rico — the 2026 robot. Drag to orbit, scroll to zoom"),
       img("architecture.svg", "Subsystem layout — each one behind an IO interface, with a simulated implementation beside the real one"),
       // Match footage and robot photos go here, e.g.:
       // yt("VIDEO_ID", "Qualification match 42"),

@@ -794,7 +794,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 
-const CAD_EXPOSURE = 0.45;        // see note above — CAD exports only
+const VIEWER_EXPOSURE = 0.45;
 const BASE_COLOR_SCALE = 0.82;
 const DRACO_PATH = "https://cdn.jsdelivr.net/npm/three@0.183.0/examples/jsm/libs/draco/";
 
@@ -845,33 +845,20 @@ window.__mount3D = function (host, url, opts) {
       if (disposed) return;
       root = gltf.scene;
 
-      // A raw CAD export is flat authored colour with no lighting of its own —
-      // that is the case the SolidWorks calibration above exists for. A model
-      // that ships its own punctual lights was lit by whoever authored it, so
-      // dimming and desaturating it would just be overriding their work.
-      let litByAuthor = false;
-      root.traverse((o) => { if (o.isLight) litByAuthor = true; });
+      // The Ramtech-Web treatment, applied to every model exactly as that
+      // viewer applies it: exposure 0.45 and base colours scaled 0.82.
+      renderer.toneMappingExposure =
+        typeof opts.exposure === "number" ? opts.exposure : VIEWER_EXPOSURE;
 
-      // An explicit exposure in the content file always wins; otherwise a raw
-      // CAD export gets the SolidWorks calibration and an author-lit model is
-      // left at 1.0.
-      if (typeof opts.exposure === "number") {
-        renderer.toneMappingExposure = opts.exposure;
-      } else if (!litByAuthor) {
-        renderer.toneMappingExposure = CAD_EXPOSURE;
-      }
-
-      if (!litByAuthor) {
-        const seen = new Set();
-        root.traverse((o) => {
-          if (!o.isMesh) return;
-          for (const mat of (Array.isArray(o.material) ? o.material : [o.material])) {
-            if (!mat || seen.has(mat)) continue;
-            seen.add(mat);
-            if (mat.color) mat.color.multiplyScalar(BASE_COLOR_SCALE);
-          }
-        });
-      }
+      const seen = new Set();
+      root.traverse((o) => {
+        if (!o.isMesh) return;
+        for (const mat of (Array.isArray(o.material) ? o.material : [o.material])) {
+          if (!mat || seen.has(mat)) continue;
+          seen.add(mat);
+          if (mat.color) mat.color.multiplyScalar(BASE_COLOR_SCALE);
+        }
+      });
       scene.add(root);
 
       // frame the whole assembly from its bounding sphere
