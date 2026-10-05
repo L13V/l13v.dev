@@ -2,89 +2,93 @@
 
 Personal site for [@L13V](https://github.com/L13V) — robotics software and infrastructure.
 
-No build step, no dependencies, no framework. Open `index.html` in a browser and it works.
+No build step, no dependencies, no framework. Open `index.html` and it works.
 
 ```
-index.html     the page — styles, layout and behaviour
+index.html     the page — styles, layout, behaviour
 projects.js    ALL the content. This is the file you edit.
-media/         screenshots, video and diagrams, one folder per project
+media/         photos, video and diagrams — one folder per project
 CNAME          points Pages at l13v.dev
 .nojekyll      stops GitHub running the files through Jekyll
 ```
 
 ## Changing the content
 
-Everything you'd want to edit lives in **`projects.js`** — your intro, the stat
-tiles, every project, the toolbox lists. It's plain lists and text with comments
-explaining each part. You never have to open `index.html` to add a project or
-change a sentence.
+Everything you'd want to edit is in **`projects.js`** — the intro, every project,
+the capability lists. Plain lists and text with comments. You never need to open
+`index.html` to add a project or reword a sentence.
 
-## Adding a screenshot or a video
+## Adding a photo or video
 
-1. Drop the file in `media/<slug>/` (the slug is in each project's entry).
-2. Add one line to that project's `media: [ ]` list:
+1. Put the file in `media/<slug>/` (the slug is listed on each project).
+2. Add one line to that project's `media: [ ]`:
 
 ```js
-img("robot-front.jpg", "Competition robot, front view")
-vid("auto.mp4",        "Three-piece auto", "auto-poster.jpg")   // 3rd arg = optional poster
-yt ("dQw4w9WgXcQ",     "Qualification match 42")                // just the YouTube id
+img("robot-front.jpg", "Drivetrain assembly, front")
+vid("auto.mp4",        "Three-piece auto", "auto-poster.jpg")   // 3rd arg optional
+yt ("dQw4w9WgXcQ",     "Qualification match 42")                // just the id
 ```
 
-That's the whole job. Thumbnails, the click-to-enlarge viewer, arrow-key and
-swipe navigation, captions and a counter all come for free.
+The big image at the top of the page comes from `SITE.hero` — drop a file in
+`media/hero/` and add it there.
 
-The first item in a project's list is its cover thumbnail. A project with an
-empty list just shows no gallery — nothing breaks. See
-[`media/README.md`](media/README.md) for file-size guidance.
+The first item in a list is that project's lead image. Thumbnails, the
+click-to-enlarge viewer, captions, figure numbers and arrow-key/swipe navigation
+are all automatic. See [`media/README.md`](media/README.md) for size guidance.
+
+### Placeholders
+
+Each project has a `placeholders:` count — how many empty plates to reserve, so
+the layout reads correctly before the photos exist. Once yours are in, set
+`SHOW_PLACEHOLDERS = false` at the top of `projects.js` and every remaining
+placeholder disappears at once.
 
 ## The viewer
 
-Click any thumbnail to open it full-screen.
-
 | | |
 |---|---|
+| click a plate | enlarge |
 | `Esc` | close |
 | `←` `→` | previous / next |
 | swipe | previous / next, on touch |
 | click the backdrop | close |
 
 Images, self-hosted video and YouTube all open in the same viewer. Video and
-YouTube are torn down on close, so audio stops when you'd expect it to.
+YouTube are destroyed on close, so audio stops when you'd expect.
 
-## Skins
+## Design notes
 
-Three complete visual identities, switchable from the nav and remembered per
-visitor in `localStorage`:
+One identity, dark only — deliberately, not by omission. Every colour is set
+explicitly, so the page doesn't depend on the visitor's theme.
 
-| Skin | Look |
-|---|---|
-| **Terminal** | Phosphor-green CRT with a scanline overlay (default) |
-| **Minimal** | Editorial serif display, follows the visitor's light/dark preference |
-| **Arcade** | Pixel type on deep purple, hard offset shadows |
+Each project carries its own accent from a fixed set of six (`--a-red`,
+`--a-cyan`, `--a-lime`, `--a-violet`, `--a-amber`, `--a-blue`) applied through a
+single `--pa` custom property. That's what colours the section rule, the figure
+numbers, the status chip, the note numbers and the hover states. To recolour a
+project, change its position in the list or edit the `ACCENTS` array.
 
-To change the default, edit `data-skin="crt"` on the `<html>` tag.
+Motion is deliberate and all of it respects `prefers-reduced-motion`:
 
-Colours and type are defined once as custom properties at the top of the
-`<style>` block — one `:root` group per skin. Nothing below them hardcodes a
-colour, so retheming means editing those blocks and nothing else.
+- the hero fades up in sequence on load
+- sections rise in as you reach them, with a 3-second failsafe that reveals
+  everything in case an observer never fires — a reveal animation must never be
+  the reason something is unreadable
+- a scroll-progress bar across the top
+- the tech ticker scrolls and pauses on hover; with reduced motion it becomes a
+  static wrapped list
 
 ## Live data
 
-The page renders completely from `projects.js` with no network at all. On load
-it also calls the public GitHub API to refresh star counts, last-pushed dates,
-the repo count and your top language. The label by "Selected work" reads
-**Live from GitHub** when that succeeded and **Static snapshot** when it didn't.
-
-Results cache for six hours in `localStorage`. The API allows 60 unauthenticated
-requests per hour per visitor IP, which is far more than this needs — and if it
-fails the page is still complete.
+The page renders completely from `projects.js` with no network. On load it also
+calls the public GitHub API to add star counts and last-pushed dates to each
+project's spec panel. If that fails, nothing is lost — the page was already complete.
 
 ## Deploying
 
-Push to `main`. Pages is already set to deploy from `main` / `/ (root)`.
+Push to `main`. Pages deploys from `main` / `/ (root)`.
 
-The custom domain is `l13v.dev` via the `CNAME` file. For it to resolve, the
-apex A/AAAA records at your registrar must point at GitHub:
+The custom domain is `l13v.dev` via `CNAME`. The apex A/AAAA records must point
+at GitHub:
 
 ```
 A     @   185.199.108.153     AAAA  @   2606:50c0:8000::153
@@ -93,6 +97,6 @@ A     @   185.199.110.153     AAAA  @   2606:50c0:8002::153
 A     @   185.199.111.153     AAAA  @   2606:50c0:8003::153
 ```
 
-Set them to **DNS-only** (grey cloud) in Cloudflare, at least until GitHub has
-issued the certificate — it can't complete the HTTP challenge through the proxy.
-Once the DNS check passes, tick **Enforce HTTPS** in Settings → Pages.
+Set them **DNS-only** (grey cloud) in Cloudflare until GitHub has issued the
+certificate — it can't complete the challenge through the proxy. Then tick
+**Enforce HTTPS** in Settings → Pages.
