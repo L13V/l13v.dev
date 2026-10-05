@@ -41,7 +41,7 @@ your best one.
 | `img` | `.jpg` `.png` `.gif` `.webp` `.svg` | |
 | `vid` | `.mp4` `.webm` | third argument is an optional poster image; without one the browser shows the first frame |
 | `yt` | YouTube | pass just the id from `youtube.com/watch?v=`**`THIS_PART`** |
-| `mdl` | `.glb` | a live 3D model you can orbit; third argument is the still shown while it loads |
+| `mdl` | `.glb` | a live 3D model you can orbit; third argument is an options object (below) |
 
 ## Sizes
 
@@ -80,7 +80,15 @@ with.
 
 ### Lighting
 
-Two cases, decided automatically:
+`mdl()`'s third argument tunes it per model, and anything you set there wins:
+
+| option | what it does |
+|---|---|
+| `exposure` | brightness. `1` is as authored, `0.38` is what Rico uses, `0.2` is very dark |
+| `env` | how much the neutral studio light fills it in, `0`–`1`. Lower keeps shadows dark and lets the model's own lights do the work |
+| `poster` | a still shown while it loads |
+
+Set nothing and it falls back to one of two cases, decided automatically:
 
 - a model that **ships its own lights** (authored in Blender, Spline, etc.) is
   rendered at exposure 1.0 with its materials untouched — whoever lit it meant
