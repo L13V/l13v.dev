@@ -27,9 +27,15 @@ const SHOW_PLACEHOLDERS = true;
 const img = (file, caption) => ({ type: "image", file, caption });
 const vid = (file, caption, poster) => ({ type: "video", file, caption, poster });
 const yt = (id, caption) => ({ type: "youtube", id, caption });
-/* mdl() is a live 3D model (.glb) you can orbit. `poster` is the still shown
-   while it loads. Keep .glb files under ~5 MB — see media/README.md. */
-const mdl = (file, caption, poster) => ({ type: "model", file, caption, poster });
+/* mdl() is a live 3D model (.glb) you can orbit. The third argument is an
+   options object, all keys optional:
+     poster    still image shown while it loads, e.g. "robot-poster.png"
+     exposure  brightness. Lower is darker. 1 = as the model was authored,
+               0.4 is noticeably moodier, 0.2 is very dark.
+     env       how much the neutral studio light fills it in, 0–1.
+   Keep .glb files under ~6 MB — see media/README.md. */
+const mdl = (file, caption, opts) =>
+  Object.assign({ type: "model", file, caption }, opts || {});
 
 const SITE = {
   name: "Liev Dorfman",
@@ -41,9 +47,10 @@ const SITE = {
   intro:
     "I write the software that makes physical things move, then build the " +
     "infrastructure that keeps it running.",
-  /* A phrase from `intro` to pick out in the accent gradient. Must match the
-     text above exactly; if it doesn't match, the line just renders plain. */
-  highlight: "physical things move",
+  /* A phrase from `intro` to pick out in the accent gradient. The surname in
+     the big heading already carries the gradient, so this is off by default —
+     set it to a phrase from `intro` above if you want it back. */
+  highlight: "",
   intro2:
     "Competition robots in Java. A Linux image that boots straight into a TV " +
     "dashboard. DNS that manages itself. A swarm of drones that fly on cue. " +
@@ -86,7 +93,8 @@ const PROJECTS = [
       /* Live 3D — drag to orbit, scroll to zoom.
          Rico, the 2026 robot. Compressed from 12.6 MB to 4.9 MB; see
          media/README.md for the exact command if you re-export it. */
-      mdl("rico-2026.glb", "Rico — the 2026 robot. Drag to orbit, scroll to zoom"),
+      mdl("rico-2026.glb", "Rico — the 2026 robot. Drag to orbit, scroll to zoom",
+          { exposure: 0.38, env: 0.35 }),
       img("architecture.svg", "Subsystem layout — each one behind an IO interface, with a simulated implementation beside the real one"),
       // Match footage and robot photos go here, e.g.:
       // yt("VIDEO_ID", "Qualification match 42"),
