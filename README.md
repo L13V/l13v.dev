@@ -27,10 +27,8 @@ the capability lists. Plain lists and text with comments. You never need to open
 img("robot-front.jpg", "Drivetrain assembly, front")
 vid("auto.mp4",        "Three-piece auto", "auto-poster.jpg")   // 3rd arg optional
 yt ("dQw4w9WgXcQ",     "Qualification match 42")                // just the id
+mdl("robot.glb",       "Drag to orbit", "robot-poster.png")     // live 3D
 ```
-
-The big image at the top of the page comes from `SITE.hero` — drop a file in
-`media/hero/` and add it there.
 
 The first item in a list is that project's lead image. Thumbnails, the
 click-to-enlarge viewer, captions, figure numbers and arrow-key/swipe navigation
@@ -53,8 +51,15 @@ placeholder disappears at once.
 | swipe | previous / next, on touch |
 | click the backdrop | close |
 
-Images, self-hosted video and YouTube all open in the same viewer. Video and
-YouTube are destroyed on close, so audio stops when you'd expect.
+Images, self-hosted video, YouTube and live 3D models all open in the same
+viewer. Video, YouTube and WebGL contexts are destroyed on close, so audio stops
+when you'd expect and a model doesn't keep a GPU context alive behind you.
+
+A `mdl()` plate is interactive in place — drag to orbit, scroll to zoom — with
+an **Expand** button for the full-screen view. Its WebGL context is built only
+when the plate nears the screen, with a timed fallback in case intersection
+callbacks never arrive. See [`media/README.md`](media/README.md) for how the
+model is exported and compressed.
 
 ## Design notes
 

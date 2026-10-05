@@ -50,7 +50,7 @@ img,video{max-width:100%; display:block}
 a{color:inherit}
 :focus-visible{outline:2px solid var(--brand-2); outline-offset:3px; border-radius:3px}
 ::selection{background:var(--brand); color:#fff}
-.wrap{max-width:1160px; margin:0 auto; padding-inline:var(--gut)}
+.wrap{max-width:1300px; margin:0 auto; padding-inline:var(--gut)}
 .mono{font-family:var(--mono)}
 .lbl{font-family:var(--mono); font-size:.64rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--fg-3)}
 
@@ -109,14 +109,6 @@ h1 em{font-style:normal; background:var(--grad); -webkit-background-clip:text; b
 .btn-1{background:var(--grad); border-color:transparent; color:#06121f; font-weight:700}
 .btn-1:hover{box-shadow:0 10px 32px -10px rgba(34,211,238,.65)}
 
-/* ticker */
-.ticker{margin-top:clamp(2rem,5vw,3rem); border-block:1px solid var(--line); overflow:hidden; position:relative; z-index:1}
-.ticker:hover .track{animation-play-state:paused}
-.track{display:flex; gap:2.4rem; width:max-content; padding-block:.85rem; animation:slide 38s linear infinite}
-@keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.track span{font-family:var(--mono); font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--fg-3); white-space:nowrap; display:flex; align-items:center; gap:2.4rem}
-.track span::after{content:"◆"; color:var(--brand); font-size:.5rem}
-
 /* ── plates ──────────────────────────────────── */
 .plates{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(.7rem,1.8vw,1.1rem)}
 .plates > :first-child{grid-column:1 / -1}
@@ -148,6 +140,42 @@ button.frame:hover::after{opacity:1; animation:sweep .75s ease-out}
     radial-gradient(70% 70% at 50% 50%, color-mix(in srgb, var(--pa) 9%, transparent), transparent 75%);
   border-style:dashed; border-color:var(--line-2);
 }
+/* ── live 3D plate ───────────────────────────── */
+.plate-model .frame{aspect-ratio:4/3; cursor:grab}
+.plate-model .frame:active{cursor:grabbing}
+.frame.model canvas{position:relative; z-index:1; display:block}
+.model-load{
+  position:absolute; inset:0; z-index:2; display:grid; place-items:center;
+  background-size:cover; background-position:center;
+  transition:opacity .55s ease; opacity:1;
+}
+.model-load::before{content:""; position:absolute; inset:0; background:rgba(8,11,17,.72)}
+.model-load span{
+  position:relative; font-family:var(--mono); font-size:.64rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--fg-2); background:rgba(8,11,17,.8);
+  border:1px solid var(--line); border-radius:100px; padding:.45rem .85rem;
+  display:flex; align-items:center; gap:.5rem;
+}
+.model-load span::before{
+  content:""; width:9px; height:9px; border-radius:50%; border:1.5px solid var(--pa);
+  border-top-color:transparent; animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.frame.model.ready .model-load{opacity:0; pointer-events:none}
+.frame.model.failed .model-load span::before{display:none}
+.model-tag,.model-exp{
+  position:absolute; bottom:10px; z-index:3; font-family:var(--mono); font-size:.58rem;
+  letter-spacing:.14em; text-transform:uppercase; border-radius:100px;
+  background:rgba(8,11,17,.8); border:1px solid var(--line-2); color:var(--fg-2);
+  padding:.34rem .7rem; backdrop-filter:blur(6px);
+}
+.model-tag{left:10px; pointer-events:none; display:flex; align-items:center; gap:.45rem}
+.model-tag i{width:5px; height:5px; border-radius:50%; background:var(--pa); flex:none}
+.model-exp{right:10px; cursor:pointer; transition:color .2s, border-color .2s}
+.model-exp:hover{color:var(--pa); border-color:var(--pa)}
+.lb-model{width:min(100%,1150px); aspect-ratio:16/10; max-height:100%; position:relative; border-radius:var(--r); overflow:hidden; background:#0b0e14; cursor:grab}
+.lb-model:active{cursor:grabbing}
+
 .empty-note{display:flex; align-items:center; gap:.55rem; font-family:var(--mono); font-size:.64rem; letter-spacing:.16em; text-transform:uppercase; color:var(--fg-3); background:rgba(8,11,17,.75); padding:.45rem .8rem; border:1px solid var(--line); border-radius:100px}
 .empty-note i{width:6px; height:6px; border-radius:50%; background:var(--pa); flex:none; animation:blink 2.2s ease-in-out infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
@@ -174,7 +202,11 @@ figcaption{font-family:var(--mono); font-size:.68rem; line-height:1.5; color:var
 .chip.live i{animation:ping2 2s ease-out infinite}
 @keyframes ping2{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--pa) 60%, transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
 h2{font-weight:700; font-size:clamp(1.5rem,3.4vw,2.3rem); line-height:1.08; letter-spacing:-.03em; margin:0 0 1.6rem; max-width:24ch; text-wrap:balance}
-.sh-cols{display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:clamp(1.4rem,4vw,3.2rem); align-items:start; margin-bottom:clamp(1.4rem,4vw,2.2rem)}
+/* Media sits BESIDE the prose, not under it — otherwise a project's height is
+   text + images stacked and nothing fits on one screen. */
+.sh-body{display:grid; grid-template-columns:minmax(0,1.08fr) minmax(0,1fr); gap:clamp(1.4rem,3vw,2.8rem); align-items:start}
+.sh-body.no-media{grid-template-columns:minmax(0,1fr)}
+.sh-media,.sh-text{min-width:0}
 .summary{font-size:1.05rem; line-height:1.6; margin:0 0 1.5rem; max-width:54ch; letter-spacing:-.008em}
 ol.notes{list-style:none; counter-reset:n; margin:0 0 1.6rem; padding:0; display:flex; flex-direction:column; gap:.95rem; max-width:58ch}
 ol.notes li{counter-increment:n; display:grid; grid-template-columns:2.1rem 1fr; font-size:.95rem; line-height:1.6; color:var(--fg-2)}
@@ -190,7 +222,8 @@ ol.notes li::before{
 }
 .plink:hover{color:var(--pa); border-color:var(--pa); background:color-mix(in srgb, var(--pa) 10%, transparent)}
 
-aside > .lbl{display:block; padding-bottom:.6rem; border-bottom:1px solid var(--line); margin-bottom:.2rem}
+.spec-block{margin:0 0 1.5rem}
+.spec-block > .lbl{display:block; padding-bottom:.6rem; border-bottom:1px solid var(--line); margin-bottom:.2rem}
 dl.spec{margin:0}
 .srow{display:flex; align-items:baseline; gap:.55rem; padding:.5rem .55rem; margin-inline:-.55rem; border-radius:5px; transition:background-color .18s}
 .srow:hover{background:color-mix(in srgb, var(--pa) 9%, transparent)}
@@ -241,8 +274,12 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 .lb-prev{left:clamp(.25rem,1.5vw,1rem)} .lb-next{right:clamp(.25rem,1.5vw,1rem)}
 .lb-cap{margin:0; padding:.95rem var(--gut) 1.4rem; font-family:var(--mono); font-size:.76rem; line-height:1.55; color:#9aa7bd; text-align:center}
 
+/* two columns need real room; below this the media goes back above the prose */
+@media (max-width:980px){
+  .sh-body,.sh-body.no-media{grid-template-columns:minmax(0,1fr)}
+}
 @media (max-width:880px){
-  .hero-cols,.sh-cols{grid-template-columns:1fr}
+  .hero-cols{grid-template-columns:1fr}
   .hd-role{display:none}
 }
 @media (max-width:560px){
@@ -289,11 +326,9 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
         <p class="sub hz" id="sub" style="animation-delay:.28s"></p>
       </div>
     </div>
-    <div class="ticker hz" style="animation-delay:.36s"><div class="track" id="track"></div></div>
   </section>
 
   <div class="wrap">
-    <div id="hero-plate" data-rev></div>
     <div id="sheets"></div>
 
     <section class="sheet" id="stack" style="--pa:var(--brand-2)" data-rev>
@@ -363,13 +398,6 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   });
   var w = el("a", "btn", "See the work"); w.href = "#work"; cta.appendChild(w);
 
-  /* ticker — built from the capability lists, duplicated for a seamless loop */
-  var words = [];
-  STACK.forEach(function (row) { row[1].split("·").forEach(function (t) { words.push(t.trim()); }); });
-  var track = document.getElementById("track");
-  function fill(dup) { words.forEach(function (t) { track.appendChild(el("span", dup ? "dup" : null, t)); }); }
-  fill(false); fill(true);   /* second copy makes the scroll loop seamless */
-
   /* ── media ── */
   var ALL = [], figNo = 0;
   function src(slug, f) { return "media/" + slug + "/" + f; }
@@ -385,9 +413,77 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     return i;
   }
 
+  /* three.js arrives as a module, which is deferred — so a mount may be
+     requested before it exists. Queue until it announces itself. */
+  function mount3D(host, url, onReady) {
+    function go() {
+      var h = null;
+      try { h = window.__mount3D(host, url); } catch (e) { host.classList.add("failed"); }
+      if (onReady) onReady(h);
+    }
+    if (window.__mount3D) { go(); }
+    else { document.addEventListener("three-ready", go, { once: true }); }
+  }
+
+  /* Only build a WebGL context once the plate is actually near the screen. */
+  function mountHost(host) {
+    if (host.getAttribute("data-mounted")) return;
+    host.setAttribute("data-mounted", "1");
+    mount3D(host, host.getAttribute("data-model"));
+  }
+  var lazy3D = "IntersectionObserver" in window
+    ? new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          lazy3D.unobserve(e.target);
+          mountHost(e.target);
+        });
+      }, { rootMargin: "300px" })
+    : null;
+  /* Failsafe: some environments never deliver intersection callbacks at all
+     (a backgrounded tab, some embedded views). The model is the point of this
+     page, so mount anything still waiting shortly after load. */
+  setTimeout(function () {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-model]"), mountHost);
+  }, 2500);
+
   function plate(slug, m, hero, accent) {
     figNo += 1;
     var no = figNo, fig = el("figure", hero ? "hero-plate" : null), cap = el("figcaption");
+
+    if (m && m.type === "model") {
+      fig.className = (fig.className ? fig.className + " " : "") + "plate-model";
+      var idxM = ALL.length;
+      ALL.push({ slug: slug, m: m, no: no, accent: accent || "--brand" });
+
+      var host = el("div", "frame model");
+      host.setAttribute("data-model", src(slug, m.file));
+
+      var load = el("div", "model-load");
+      if (m.poster) { load.style.backgroundImage = "url('" + src(slug, m.poster) + "')"; }
+      load.appendChild(el("span", null, "Loading 3D"));
+      host.appendChild(load);
+
+      var tag = el("div", "model-tag");
+      tag.appendChild(el("i"));
+      tag.appendChild(document.createTextNode("Live 3D · drag to orbit"));
+      host.appendChild(tag);
+
+      var exp = el("button", "model-exp", "Expand");
+      exp.type = "button";
+      exp.setAttribute("aria-label", "Open the 3D model full screen");
+      exp.addEventListener("click", function () { open(idxM); });
+      host.appendChild(exp);
+
+      fig.appendChild(host);
+      cap.appendChild(el("span", "fig", "FIG " + pad(no)));
+      cap.appendChild(el("span", null, m.caption || ""));
+      fig.appendChild(cap);
+
+      if (lazy3D) { lazy3D.observe(host); } else { mountHost(host); }
+      return fig;
+    }
+
     if (m) {
       var idx = ALL.length;
       ALL.push({ slug: slug, m: m, no: no, accent: accent || "--brand" });
@@ -424,10 +520,6 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     return box;
   }
 
-  var hp = plateSet("hero", SITE.hero, (SITE.hero && SITE.hero.length) ? 0 : 1, true, "--brand");
-  var holder = document.getElementById("hero-plate");
-  if (hp) { hp.setAttribute("data-rev", ""); holder.replaceWith(hp); } else { holder.remove(); }
-
   /* ── sheets ── */
   var sheets = document.getElementById("sheets"), repoLines = {}, total = PROJECTS.length;
   var first = document.createElement("div");
@@ -455,38 +547,50 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     s.appendChild(head);
     s.appendChild(el("h2", null, p.title));
 
-    var cols = el("div", "sh-cols"), main = el("div");
-    main.appendChild(el("p", "summary", p.summary));
+    var body = el("div", "sh-body");
+
+    var ps = plateSet(p.slug, p.media, p.placeholders, false, accent);
+    if (ps) {
+      var mcol = el("div", "sh-media");
+      mcol.appendChild(ps);
+      body.appendChild(mcol);
+    } else {
+      body.className = "sh-body no-media";
+    }
+
+    var text = el("div", "sh-text");
+    text.appendChild(el("p", "summary", p.summary));
     if (p.notes && p.notes.length) {
       var ol = el("ol", "notes");
       p.notes.forEach(function (t) { var li = document.createElement("li"); li.appendChild(el("span", null, t)); ol.appendChild(li); });
-      main.appendChild(ol);
+      text.appendChild(ol);
     }
+
+    if (p.specs && p.specs.length) {
+      var sb = el("div", "spec-block");
+      sb.appendChild(el("span", "lbl", "Specification"));
+      var dl = el("dl", "spec");
+      p.specs.forEach(function (row) {
+        var r = el("div", "srow");
+        r.appendChild(el("dt", null, row[0]));
+        r.appendChild(el("span", "ldr"));
+        r.appendChild(el("dd", null, row[1]));
+        dl.appendChild(r);
+      });
+      sb.appendChild(dl);
+      var rl = el("div", "repo");
+      rl.appendChild(el("span", null, p.repo));
+      repoLines[p.repo] = rl;
+      sb.appendChild(rl);
+      text.appendChild(sb);
+    }
+
     var lk = el("div", "sh-links");
     (p.links || []).forEach(function (l) { var a = el("a", "plink", l.label); a.href = l.href; a.rel = "noopener"; lk.appendChild(a); });
-    main.appendChild(lk);
-    cols.appendChild(main);
+    text.appendChild(lk);
 
-    var aside = el("aside");
-    aside.appendChild(el("span", "lbl", "Specification"));
-    var dl = el("dl", "spec");
-    (p.specs || []).forEach(function (row) {
-      var r = el("div", "srow");
-      r.appendChild(el("dt", null, row[0]));
-      r.appendChild(el("span", "ldr"));
-      r.appendChild(el("dd", null, row[1]));
-      dl.appendChild(r);
-    });
-    aside.appendChild(dl);
-    var rl = el("div", "repo");
-    rl.appendChild(el("span", null, p.repo));
-    repoLines[p.repo] = rl;
-    aside.appendChild(rl);
-    cols.appendChild(aside);
-    s.appendChild(cols);
-
-    var ps = plateSet(p.slug, p.media, p.placeholders, false, accent);
-    if (ps) s.appendChild(ps);
+    body.appendChild(text);
+    s.appendChild(body);
 
     sheets.appendChild(s);
   });
@@ -527,14 +631,24 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   var lb = document.getElementById("lb"), stage = document.getElementById("lb-stage");
   var capN = document.getElementById("lb-cap"), figN = document.getElementById("lb-fig"), ctN = document.getElementById("lb-ct");
   var prev = document.getElementById("lb-prev"), next = document.getElementById("lb-next"), x = document.getElementById("lb-x");
-  var at = 0, back = null, node = null;
+  var at = 0, back = null, node = null, lbViewer = null, mountToken = 0;
 
-  function clear() { if (node && node.parentNode) node.parentNode.removeChild(node); node = null; }
+  function clear() {
+    mountToken += 1;                 /* invalidates any mount still in flight */
+    if (lbViewer && lbViewer.dispose) { lbViewer.dispose(); }
+    lbViewer = null;
+    if (node && node.parentNode) node.parentNode.removeChild(node);
+    node = null;
+  }
   function show() {
     clear();
-    var f = ALL[at], m = f.m, n;
+    var f = ALL[at], m = f.m, n, mountUrl = null;
     lb.style.setProperty("--pa", "var(" + f.accent + ")");
-    if (m.type === "youtube") {
+    if (m.type === "model") {
+      n = document.createElement("div");
+      n.className = "lb-model";
+      mountUrl = src(f.slug, m.file);   /* mounted after it is in the DOM */
+    } else if (m.type === "youtube") {
       n = document.createElement("iframe");
       n.src = "https://www.youtube-nocookie.com/embed/" + m.id + "?autoplay=1&rel=0";
       n.allow = "autoplay; encrypted-media; picture-in-picture";
@@ -545,6 +659,14 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       if (m.poster) n.poster = src(f.slug, m.poster);
     } else { n = document.createElement("img"); n.src = src(f.slug, m.file); n.alt = m.caption || ""; }
     node = n; stage.appendChild(n);
+    if (mountUrl) {
+      var token = mountToken;
+      mount3D(n, mountUrl, function (h) {
+        /* closed or stepped away while three.js was still loading */
+        if (token !== mountToken) { if (h && h.dispose) { h.dispose(); } return; }
+        lbViewer = h;
+      });
+    }
     capN.textContent = m.caption || "";
     figN.textContent = "FIG " + pad(f.no);
     ctN.textContent = (at + 1) + " of " + ALL.length;
@@ -594,6 +716,137 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       .catch(function () {});
   }
 })();
+</script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.183.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+/* Live CAD viewer.
+ *
+ * Lighting is carried over verbatim from the Ramtech-Web CAD viewer, where the
+ * exposure was calibrated against SolidWorks' own renders rather than chosen by
+ * eye. Don't nudge these by feel:
+ *
+ *   exposure 0.45 over a RoomEnvironment studio IBL with neutral tone mapping
+ *   base colours scaled 0.82 on load, because powder-coated parts export as
+ *   pure 1.0 white and otherwise clip to one indistinguishable blob
+ */
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+
+const EXPOSURE = 0.45;
+const BASE_COLOR_SCALE = 0.82;
+
+window.__mount3D = function (host, url) {
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = EXPOSURE;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  const canvas = renderer.domElement;
+  canvas.style.width = "100%";
+  canvas.style.height = "100%";
+  host.appendChild(canvas);
+
+  const scene = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 1000);
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.autoRotateSpeed = 0.8;
+  controls.autoRotate = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // once someone takes hold of it, the idle spin does not come back and drag
+  // the view out from under whatever they had lined up
+  controls.addEventListener("start", () => { controls.autoRotate = false; });
+
+  const resize = () => {
+    const w = host.clientWidth || 1, h = host.clientHeight || 1;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  };
+  resize();
+  const ro = new ResizeObserver(resize);
+  ro.observe(host);
+
+  let raf = 0, disposed = false, root = null;
+
+  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(
+    url,
+    (gltf) => {
+      if (disposed) return;
+      root = gltf.scene;
+      const seen = new Set();
+      root.traverse((o) => {
+        if (!o.isMesh) return;
+        for (const mat of (Array.isArray(o.material) ? o.material : [o.material])) {
+          if (!mat || seen.has(mat)) continue;
+          seen.add(mat);
+          if (mat.color) mat.color.multiplyScalar(BASE_COLOR_SCALE);
+        }
+      });
+      scene.add(root);
+
+      // frame the whole assembly from its bounding sphere
+      const sphere = new THREE.Box3().setFromObject(root).getBoundingSphere(new THREE.Sphere());
+      const dist = sphere.radius / Math.sin((camera.fov * Math.PI) / 360);
+      controls.target.copy(sphere.center);
+      // 1.05 rather than 1.15: framing is bounding-sphere based, so the model
+      // can never clip as it spins — the extra margin only made it look small
+      camera.position.copy(sphere.center).add(
+        new THREE.Vector3(0.55, 0.42, 0.72).normalize().multiplyScalar(dist * 1.05));
+      camera.near = Math.max(dist / 1000, 1e-4);
+      camera.far = dist * 12;
+      camera.updateProjectionMatrix();
+      controls.update();
+
+      host.classList.add("ready");
+      const tick = () => { controls.update(); renderer.render(scene, camera); raf = requestAnimationFrame(tick); };
+      raf = requestAnimationFrame(tick);
+    },
+    undefined,
+    () => {
+      if (disposed) return;
+      host.classList.add("failed");
+      const s = host.querySelector(".model-load span");
+      if (s) s.textContent = "3D unavailable";
+    }
+  );
+
+  return {
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      controls.dispose();
+      if (root) {
+        root.traverse((o) => {
+          if (!o.isMesh) return;
+          o.geometry?.dispose();
+          for (const m of (Array.isArray(o.material) ? o.material : [o.material])) m?.dispose();
+        });
+      }
+      scene.environment?.dispose();
+      pmrem.dispose();
+      renderer.dispose();
+      canvas.remove();
+    }
+  };
+};
+
+document.dispatchEvent(new Event("three-ready"));
 </script>
 </body>
 </html>

@@ -27,6 +27,9 @@ const SHOW_PLACEHOLDERS = true;
 const img = (file, caption) => ({ type: "image", file, caption });
 const vid = (file, caption, poster) => ({ type: "video", file, caption, poster });
 const yt = (id, caption) => ({ type: "youtube", id, caption });
+/* mdl() is a live 3D model (.glb) you can orbit. `poster` is the still shown
+   while it loads. Keep .glb files under ~5 MB — see media/README.md. */
+const mdl = (file, caption, poster) => ({ type: "model", file, caption, poster });
 
 const SITE = {
   name: "Liev Dorfman",
@@ -46,10 +49,6 @@ const SITE = {
     { label: "GitHub", href: "https://github.com/L13V" },
     { label: "dorfman.net", href: "https://dorfman.net" },
   ],
-  /* The big image at the very top. Put a file in media/hero/ and add it here:
-       hero: [ img("robot.jpg", "2026 competition robot") ]
-     Leave the list empty and a placeholder plate is drawn instead. */
-  hero: [],
 };
 
 const PROJECTS = [
@@ -61,7 +60,7 @@ const PROJECTS = [
     period: "2026",
     status: "In season",
     lead: true,                 /* gets the big plate at the top of the page */
-    placeholders: 3,
+    placeholders: 2,
     summary:
       "A swerve drivetrain, a two-stage shooter and a full intake path, written " +
       "against AdvantageKit's IO pattern — so every subsystem has a simulated " +
@@ -81,7 +80,15 @@ const PROJECTS = [
     ],
     links: [{ label: "Source", href: "https://github.com/L13V/2026_59" }],
     media: [
+      /* Live 3D — drag to orbit, scroll to zoom. Exported from SolidWorks by the
+         Ramtech-Web part extractor, then decimated from 36 MB to 2.7 MB.
+         NOTE: this is the MS2025 assembly. Drop a 2026 export in beside it and
+         only this one line changes. */
+      mdl("robot-ms2025.glb", "Robot assembly — drag to orbit, scroll to zoom", "robot-poster.png"),
       img("architecture.svg", "Subsystem layout — each one behind an IO interface, with a simulated implementation beside the real one"),
+      // Match footage and robot photos go here, e.g.:
+      // yt("VIDEO_ID", "Qualification match 42"),
+      // img("robot-front.jpg", "Competition robot, front view"),
     ],
   },
 
