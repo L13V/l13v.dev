@@ -458,6 +458,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     var o = {};
     if (typeof m.exposure === "number") o.exposure = m.exposure;
     if (typeof m.env === "number") o.env = m.env;
+    if (m.ao) o.ao = true;
     return o;
   }
 
@@ -793,6 +794,10 @@ import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
 
 const VIEWER_EXPOSURE = 0.45;
 const BASE_COLOR_SCALE = 0.82;
@@ -826,9 +831,22 @@ window.__mount3D = function (host, url, opts) {
   // the view out from under whatever they had lined up
   controls.addEventListener("start", () => { controls.autoRotate = false; });
 
+  // Same pipeline as the Ramtech-Web viewer: render into an HDR float buffer
+  // and let OutputPass do the tone mapping, rather than tone mapping in the
+  // material shaders on a direct render. (Its OutlinePass is for part picking,
+  // which this page has no use for, and is a pass-through when nothing is
+  // selected.)
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const gtao = opts.ao ? new GTAOPass(scene, camera, 1, 1) : null;
+  if (gtao) composer.addPass(gtao);
+  composer.addPass(new OutputPass());
+
   const resize = () => {
     const w = host.clientWidth || 1, h = host.clientHeight || 1;
     renderer.setSize(w, h, false);
+    composer.setSize(w, h);
+    if (gtao) gtao.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   };
@@ -874,8 +892,20 @@ window.__mount3D = function (host, url, opts) {
       camera.updateProjectionMatrix();
       controls.update();
 
+      // AO radius has to follow the model's scale, so it is set once the
+      // bounding sphere is known rather than guessed at a world size
+      if (gtao) {
+        gtao.updateGtaoMaterial({
+          radius: Math.max(sphere.radius * 0.12, 0.02),
+          distanceExponent: 1,
+          thickness: sphere.radius * 0.1,
+          scale: 1,
+          samples: 16
+        });
+      }
+
       host.classList.add("ready");
-      const tick = () => { controls.update(); renderer.render(scene, camera); raf = requestAnimationFrame(tick); };
+      const tick = () => { controls.update(); composer.render(); raf = requestAnimationFrame(tick); };
       raf = requestAnimationFrame(tick);
     },
     undefined,
@@ -904,6 +934,7 @@ window.__mount3D = function (host, url, opts) {
       scene.environment?.dispose();
       pmrem.dispose();
       draco.dispose();
+      composer.dispose();
       renderer.dispose();
       canvas.remove();
     }
