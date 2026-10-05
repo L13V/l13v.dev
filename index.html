@@ -65,7 +65,16 @@ header{
   border-bottom:1px solid var(--line);
 }
 .hd{display:flex; align-items:center; gap:1rem; min-height:60px; flex-wrap:wrap}
-.hd-name{font-weight:700; letter-spacing:-.02em; font-size:.98rem; display:flex; align-items:center; gap:.6rem}
+.hd-lead{display:flex; align-items:center; gap:.6rem; min-width:0}
+.hd-name{
+  font-weight:700; letter-spacing:-.02em; font-size:.98rem; margin:0; white-space:nowrap;
+  /* the name is the page heading; it arrives in the bar once the opening
+     statement has scrolled by, so the top of the page isn't a wall of name */
+  opacity:0; transform:translateY(-7px);
+  transition:opacity .38s ease, transform .38s ease;
+}
+header.named .hd-name{opacity:1; transform:none}
+.hd-name em{font-style:normal; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
 .dot{width:7px; height:7px; border-radius:50%; background:var(--a-lime); box-shadow:0 0 0 0 rgba(163,230,53,.6); animation:ping 2.4s ease-out infinite; flex:none}
 @keyframes ping{0%{box-shadow:0 0 0 0 rgba(163,230,53,.55)}70%{box-shadow:0 0 0 9px rgba(163,230,53,0)}100%{box-shadow:0 0 0 0 rgba(163,230,53,0)}}
 .hd-role{font-family:var(--mono); font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-3); padding-left:1rem; border-left:1px solid var(--line); }
@@ -76,7 +85,7 @@ header{
 .hd nav a:hover::after{right:0}
 
 /* ── hero ────────────────────────────────────── */
-.hero{position:relative; padding-block:clamp(3rem,9vw,6.5rem) clamp(1.5rem,4vw,2.5rem); overflow:hidden}
+.hero{position:relative; padding-block:clamp(1.6rem,3.5vw,2.8rem) clamp(1.4rem,3.5vw,2.4rem); overflow:hidden}
 .glow{
   position:absolute; inset:-30% -15% auto -15%; height:700px; z-index:0; pointer-events:none;
   background:
@@ -90,13 +99,13 @@ header{
 .hero > *:not(.glow){position:relative; z-index:1}
 .eyebrow{display:inline-flex; align-items:center; gap:.65rem; margin:0 0 1.5rem; padding:.42rem .8rem; border:1px solid var(--line-2); border-radius:100px; background:rgba(14,19,28,.6)}
 .eyebrow b{font-family:var(--mono); font-size:.64rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--fg-2)}
-h1{
-  font-weight:800; font-size:clamp(2.7rem,10vw,7rem); line-height:.9; letter-spacing:-.045em;
-  margin:0 0 1.5rem; text-transform:uppercase; text-wrap:balance;
+.hero-cols{display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:clamp(1.4rem,4vw,3.5rem); align-items:start}
+/* the opening statement carries the page now that the name has moved up */
+.lede{
+  font-size:clamp(1.5rem,3.3vw,2.65rem); line-height:1.13; letter-spacing:-.03em;
+  font-weight:600; margin:0; max-width:28ch; text-wrap:balance;
 }
-h1 em{font-style:normal; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
-.hero-cols{display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:clamp(1.4rem,4vw,3.5rem); align-items:start}
-.lede{font-size:clamp(1.1rem,2vw,1.42rem); line-height:1.45; letter-spacing:-.015em; font-weight:500; margin:0; max-width:30ch}
+.lede em{font-style:normal; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
 .sub{font-size:1rem; color:var(--fg-2); margin:0; max-width:50ch}
 .cta{display:flex; gap:.7rem; flex-wrap:wrap; margin-top:2.1rem}
 .btn{
@@ -302,7 +311,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 
 <header>
   <div class="wrap hd">
-    <span class="hd-name"><span class="dot"></span><span id="hd-name"></span></span>
+    <div class="hd-lead"><span class="dot"></span><h1 class="hd-name" id="hd-name"></h1></div>
     <span class="hd-role" id="hd-role"></span>
     <nav>
       <a href="#work">Work</a>
@@ -317,7 +326,6 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     <div class="glow"></div>
     <div class="wrap">
       <p class="eyebrow hz" style="animation-delay:.05s"><span class="dot"></span><b id="eyebrow"></b></p>
-      <h1 class="hz" style="animation-delay:.12s" id="h1"></h1>
       <div class="hero-cols">
         <div class="hz" style="animation-delay:.2s">
           <p class="lede" id="lede"></p>
@@ -378,18 +386,28 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   function pad(n) { return (n < 10 ? "0" : "") + n; }
 
   /* header + hero */
-  document.getElementById("hd-name").textContent = SITE.name;
   document.getElementById("hd-role").textContent = SITE.role;
   document.getElementById("eyebrow").textContent = SITE.team;
-  document.getElementById("lede").textContent = SITE.intro;
   document.getElementById("sub").textContent = SITE.intro2;
   document.getElementById("yr").textContent = String(new Date().getFullYear());
 
-  /* name, with the surname in the gradient */
-  var h1 = document.getElementById("h1");
+  /* header name, surname in the gradient */
+  var hdName = document.getElementById("hd-name");
   var parts = SITE.name.split(" ");
-  h1.appendChild(document.createTextNode(parts.slice(0, -1).join(" ") + " "));
-  h1.appendChild(el("em", null, parts[parts.length - 1]));
+  hdName.appendChild(document.createTextNode(parts.slice(0, -1).join(" ") + " "));
+  hdName.appendChild(el("em", null, parts[parts.length - 1]));
+
+  /* the opening statement, with one phrase picked out in the gradient */
+  var ledeEl = document.getElementById("lede");
+  var phrase = SITE.highlight;
+  var at = phrase ? SITE.intro.indexOf(phrase) : -1;
+  if (at >= 0) {
+    ledeEl.appendChild(document.createTextNode(SITE.intro.slice(0, at)));
+    ledeEl.appendChild(el("em", null, phrase));
+    ledeEl.appendChild(document.createTextNode(SITE.intro.slice(at + phrase.length)));
+  } else {
+    ledeEl.textContent = SITE.intro;
+  }
 
   var cta = document.getElementById("cta");
   SITE.links.forEach(function (l, i) {
@@ -602,9 +620,12 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 
   /* ── scroll progress ── */
   var bar = document.getElementById("bar");
+  var header = document.querySelector("header");
   function prog() {
     var h = document.documentElement.scrollHeight - window.innerHeight;
     bar.style.width = (h > 0 ? (window.scrollY / h) * 100 : 0) + "%";
+    /* bring the name into the bar once the opening statement is behind you */
+    header.classList.toggle("named", window.scrollY > 140);
   }
   addEventListener("scroll", prog, { passive: true });
   addEventListener("resize", prog);
@@ -739,18 +760,20 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
  */
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 
-const EXPOSURE = 0.45;
+const CAD_EXPOSURE = 0.45;        // see note above — CAD exports only
 const BASE_COLOR_SCALE = 0.82;
+const DRACO_PATH = "https://cdn.jsdelivr.net/npm/three@0.183.0/examples/jsm/libs/draco/";
 
 window.__mount3D = function (host, url) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = EXPOSURE;
+  renderer.toneMappingExposure = 1;      // dropped to CAD_EXPOSURE below, if warranted
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   const canvas = renderer.domElement;
   canvas.style.width = "100%";
@@ -782,20 +805,32 @@ window.__mount3D = function (host, url) {
 
   let raf = 0, disposed = false, root = null;
 
-  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(
+  const draco = new DRACOLoader().setDecoderPath(DRACO_PATH);
+  new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder).load(
     url,
     (gltf) => {
       if (disposed) return;
       root = gltf.scene;
-      const seen = new Set();
-      root.traverse((o) => {
-        if (!o.isMesh) return;
-        for (const mat of (Array.isArray(o.material) ? o.material : [o.material])) {
-          if (!mat || seen.has(mat)) continue;
-          seen.add(mat);
-          if (mat.color) mat.color.multiplyScalar(BASE_COLOR_SCALE);
-        }
-      });
+
+      // A raw CAD export is flat authored colour with no lighting of its own —
+      // that is the case the SolidWorks calibration above exists for. A model
+      // that ships its own punctual lights was lit by whoever authored it, so
+      // dimming and desaturating it would just be overriding their work.
+      let litByAuthor = false;
+      root.traverse((o) => { if (o.isLight) litByAuthor = true; });
+
+      if (!litByAuthor) {
+        renderer.toneMappingExposure = CAD_EXPOSURE;
+        const seen = new Set();
+        root.traverse((o) => {
+          if (!o.isMesh) return;
+          for (const mat of (Array.isArray(o.material) ? o.material : [o.material])) {
+            if (!mat || seen.has(mat)) continue;
+            seen.add(mat);
+            if (mat.color) mat.color.multiplyScalar(BASE_COLOR_SCALE);
+          }
+        });
+      }
       scene.add(root);
 
       // frame the whole assembly from its bounding sphere
@@ -840,6 +875,7 @@ window.__mount3D = function (host, url) {
       }
       scene.environment?.dispose();
       pmrem.dispose();
+      draco.dispose();
       renderer.dispose();
       canvas.remove();
     }

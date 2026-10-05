@@ -37,10 +37,13 @@ const SITE = {
   role: "Robotics software & infrastructure",
   team: "FRC 59 · RAMTECH",
   location: "",
-  /* Two or three sentences. This is the first thing anyone reads. */
+  /* The opening statement — the first thing anyone reads, set large. */
   intro:
     "I write the software that makes physical things move, then build the " +
     "infrastructure that keeps it running.",
+  /* A phrase from `intro` to pick out in the accent gradient. Must match the
+     text above exactly; if it doesn't match, the line just renders plain. */
+  highlight: "physical things move",
   intro2:
     "Competition robots in Java. A Linux image that boots straight into a TV " +
     "dashboard. DNS that manages itself. A swarm of drones that fly on cue. " +
@@ -80,11 +83,10 @@ const PROJECTS = [
     ],
     links: [{ label: "Source", href: "https://github.com/L13V/2026_59" }],
     media: [
-      /* Live 3D — drag to orbit, scroll to zoom. Exported from SolidWorks by the
-         Ramtech-Web part extractor, then decimated from 36 MB to 2.7 MB.
-         NOTE: this is the MS2025 assembly. Drop a 2026 export in beside it and
-         only this one line changes. */
-      mdl("robot-ms2025.glb", "Robot assembly — drag to orbit, scroll to zoom", "robot-poster.png"),
+      /* Live 3D — drag to orbit, scroll to zoom.
+         Rico, the 2026 robot. Compressed from 12.6 MB to 4.9 MB; see
+         media/README.md for the exact command if you re-export it. */
+      mdl("rico-2026.glb", "Rico — the 2026 robot. Drag to orbit, scroll to zoom"),
       img("architecture.svg", "Subsystem layout — each one behind an IO interface, with a simulated implementation beside the real one"),
       // Match footage and robot photos go here, e.g.:
       // yt("VIDEO_ID", "Qualification match 42"),
