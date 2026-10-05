@@ -64,22 +64,30 @@ nothing depends on them.
 and an **Expand** button opens it full screen. It idles with a slow spin that
 stops for good the moment you take hold of it.
 
-`2026_59/robot-ms2025.glb` came out of the Ramtech-Web SolidWorks extractor at
-**36.8 MB**, which is far too heavy to put on a page. It ships at **2.7 MB**:
+`2026_59/rico-2026.glb` is Rico, the 2026 robot. It arrived at **12.6 MB** and
+ships at **4.9 MB**:
 
 ```bash
-npx @gltf-transform/cli optimize in.glb out.glb     --compress meshopt --simplify true --simplify-error 0.0004
+npx @gltf-transform/cli optimize in.glb out.glb     --compress draco --simplify true --simplify-error 0.0006
 ```
 
-That is a 93% reduction and the assembly still reads correctly at viewer size.
-Raise `--simplify-error` for a smaller file, lower it to keep more detail.
-Anything much over ~5 MB will feel slow on a phone.
+Draco beats meshopt by roughly 2× on this model, so prefer it. Raise
+`--simplify-error` for a smaller file, lower it to keep more detail. Anything
+much over ~6 MB starts to feel slow on a phone.
 
-The viewer decodes meshopt-compressed geometry, so keep `--compress meshopt`
-when you re-export. Lighting is carried over from the Ramtech-Web CAD viewer,
-where exposure was calibrated against SolidWorks' own renders — don't adjust it
-by eye.
+The viewer decodes **both** Draco and meshopt, so either is safe to re-export
+with.
 
-> **Note:** the model currently on the 2026 project is the **MS2025** assembly,
-> because that is the only robot export in Ramtech-Web. Drop a 2026 export into
-> `media/2026_59/` and change the one `mdl(...)` line in `projects.js`.
+### Lighting
+
+Two cases, decided automatically:
+
+- a model that **ships its own lights** (authored in Blender, Spline, etc.) is
+  rendered at exposure 1.0 with its materials untouched — whoever lit it meant
+  it to look that way
+- a **raw CAD export**, which is flat colour with no lighting of its own, gets
+  the Ramtech-Web calibration: exposure 0.45 and base colours scaled 0.82,
+  measured against SolidWorks' own renders rather than chosen by eye
+
+So dropping in a SolidWorks export still looks right, and so does an artist's
+scene. Neither needs a setting changed.
