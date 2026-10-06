@@ -1265,8 +1265,11 @@ window.__mount3D = function (host, url, opts) {
   const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 1000);
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
-  controls.autoRotateSpeed = 1.6;
-  const spin = opts.spin !== false && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // The idle orbit is the point of the plate, so it runs even with reduced
+  // motion on, just slower; taking hold of the model stops it for good.
+  const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  controls.autoRotateSpeed = calm ? 0.8 : 1.6;
+  const spin = opts.spin !== false;
   // the spin waits for the model, so it never starts on an empty frame
   controls.autoRotate = false;
 
