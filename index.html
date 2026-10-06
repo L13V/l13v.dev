@@ -123,6 +123,8 @@ h1 em{font-style:normal; background:var(--grad); -webkit-background-clip:text; b
 /* ── plates ──────────────────────────────────── */
 .plates{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(.7rem,1.8vw,1.1rem)}
 .plates > :first-child{grid-column:1 / -1}
+/* an even count would leave the last one alone in half a row */
+.plates > :last-child:nth-child(even){grid-column:1 / -1}
 .plates.single{grid-template-columns:1fr}
 figure{margin:0; min-width:0}
 .frame{
@@ -144,13 +146,6 @@ button.frame::after{
 }
 button.frame:hover::after{opacity:1; animation:sweep .75s ease-out}
 @keyframes sweep{to{transform:translateX(70%)}}
-.frame.empty{
-  display:grid; place-items:center; cursor:default;
-  background:
-    repeating-linear-gradient(45deg, rgba(234,239,247,.045) 0 1px, transparent 1px 11px),
-    radial-gradient(70% 70% at 50% 50%, color-mix(in srgb, var(--pa) 9%, transparent), transparent 75%);
-  border-style:dashed; border-color:var(--line-2);
-}
 /* ── live 3D plate ───────────────────────────── */
 .plate-model .frame{aspect-ratio:4/3; cursor:grab}
 .plate-model .frame:active{cursor:grabbing}
@@ -173,6 +168,8 @@ button.frame:hover::after{opacity:1; animation:sweep .75s ease-out}
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 .frame.model.ready .model-load{opacity:0; pointer-events:none}
+.frame.model .model-tag{transition:opacity .4s}
+.frame.model:not(.ready) .model-tag{opacity:0}
 .frame.model.failed .model-load span::before{display:none}
 .model-tag,.model-exp{
   position:absolute; bottom:10px; z-index:3; font-family:var(--mono); font-size:.58rem;
@@ -184,12 +181,21 @@ button.frame:hover::after{opacity:1; animation:sweep .75s ease-out}
 .model-tag i{width:5px; height:5px; border-radius:50%; background:var(--pa); flex:none}
 .model-exp{right:10px; cursor:pointer; transition:color .2s, border-color .2s}
 .model-exp:hover{color:var(--pa); border-color:var(--pa)}
+.model-reset{
+  position:absolute; top:10px; right:10px; z-index:3; display:inline-flex; align-items:center; gap:.4rem;
+  font-family:var(--mono); font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; cursor:pointer;
+  border-radius:100px; background:rgba(8,11,17,.8); border:1px solid var(--line-2); color:var(--fg-2);
+  padding:.34rem .7rem .34rem .55rem; backdrop-filter:blur(6px);
+  opacity:0; transform:translateY(-4px); pointer-events:none; transition:opacity .25s, transform .25s, color .2s, border-color .2s;
+}
+.model-reset svg{width:11px; height:11px}
+.model-reset.on{opacity:1; transform:none; pointer-events:auto}
+.model-reset:hover{color:var(--pa); border-color:var(--pa)}
+.model-load.has-poster{place-items:end start; padding:10px}
+.model-load.has-poster::before{background:linear-gradient(180deg, transparent 60%, rgba(8,11,17,.5))}
 .lb-model{width:min(100%,1150px); aspect-ratio:16/10; max-height:100%; position:relative; border-radius:var(--r); overflow:hidden; background:#0b0e14; cursor:grab}
 .lb-model:active{cursor:grabbing}
 
-.empty-note{display:flex; align-items:center; gap:.55rem; font-family:var(--mono); font-size:.64rem; letter-spacing:.16em; text-transform:uppercase; color:var(--fg-3); background:rgba(8,11,17,.75); padding:.45rem .8rem; border:1px solid var(--line); border-radius:100px}
-.empty-note i{width:6px; height:6px; border-radius:50%; background:var(--pa); flex:none; animation:blink 2.2s ease-in-out infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 figcaption{font-family:var(--mono); font-size:.68rem; line-height:1.5; color:var(--fg-2); padding-top:.6rem; display:flex; gap:.6rem; align-items:baseline}
 .fig{color:var(--pa); font-weight:600; letter-spacing:.07em; white-space:nowrap}
 .play{position:absolute; inset:0; display:grid; place-items:center; pointer-events:none}
@@ -246,6 +252,97 @@ dl.spec{margin:0}
 .srow .ldr{flex:1 1 auto; min-width:.8rem; border-bottom:1px dotted var(--line-2); transform:translateY(-.22em)}
 .srow dd{margin:0; font-family:var(--mono); font-size:.75rem; color:var(--fg); text-align:right; min-width:0}
 .repo{margin-top:1rem; padding-top:.8rem; border-top:1px solid var(--line); font-family:var(--mono); font-size:.66rem; color:var(--fg-3); display:flex; gap:.9rem; flex-wrap:wrap}
+
+/* ── source viewer ───────────────────────────── */
+.sh-side{min-width:0}
+.code{
+  --code-h:clamp(21rem,58vh,31rem);
+  margin-top:clamp(2rem,4vw,2.8rem); border:1px solid var(--line); border-radius:calc(var(--r) + 3px);
+  background:linear-gradient(180deg, var(--bg-2), color-mix(in srgb, var(--bg) 70%, var(--bg-2)));
+  overflow:hidden; position:relative;
+  box-shadow:0 30px 70px -40px rgba(0,0,0,.9), inset 0 1px 0 rgba(234,239,247,.04);
+}
+.code::before{content:""; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, var(--pa), transparent 55%)}
+.code-hd{display:flex; align-items:center; gap:1rem; flex-wrap:wrap; padding:.85rem 1rem .85rem 1.15rem; border-bottom:1px solid var(--line)}
+.code-id{display:flex; align-items:center; gap:.7rem; min-width:0; flex-wrap:wrap}
+.code-id svg{width:15px; height:15px; color:var(--pa); flex:none}
+.code-repo{font-family:var(--mono); font-size:.8rem; font-weight:600; color:var(--fg); text-decoration:none; letter-spacing:-.01em}
+.code-repo span{color:var(--fg-3); font-weight:400}
+.code-repo:hover{color:var(--pa)}
+.code-ref{font-family:var(--mono); font-size:.64rem; letter-spacing:.06em; color:var(--fg-3); text-decoration:none; padding:.2rem .5rem; border:1px solid var(--line); border-radius:100px; transition:color .2s, border-color .2s}
+.code-ref:hover{color:var(--fg); border-color:var(--line-2)}
+.code-acts{margin-left:auto; display:flex; gap:.5rem; flex-wrap:wrap}
+.code-act{
+  font-family:var(--mono); font-size:.62rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+  text-decoration:none; display:inline-flex; align-items:center; gap:.45rem;
+  padding:.5rem .8rem; border-radius:var(--r); border:1px solid var(--line-2); color:var(--fg-2);
+  transition:color .2s, border-color .2s, background-color .2s, transform .2s, box-shadow .2s;
+}
+.code-act svg{width:12px; height:12px; flex:none}
+.code-act:hover{color:var(--fg); border-color:var(--pa); transform:translateY(-1px)}
+.code-act.pri{color:#0b0e14; background:var(--pa); border-color:transparent}
+.code-act.pri:hover{color:#0b0e14; box-shadow:0 8px 24px -10px color-mix(in srgb, var(--pa) 80%, transparent)}
+
+.code-body{display:grid; grid-template-columns:minmax(0,17.5rem) minmax(0,1fr)}
+.code-rail{border-right:1px solid var(--line); display:flex; flex-direction:column; min-width:0}
+.code-tabs{display:flex; flex-direction:column; padding:.5rem}
+.code-tab{
+  all:unset; box-sizing:border-box; cursor:pointer; display:grid; grid-template-columns:1.8rem 1fr; row-gap:.1rem;
+  padding:.62rem .7rem; border-radius:6px; position:relative; transition:background-color .2s;
+}
+.code-tab:hover{background:rgba(234,239,247,.035)}
+.code-tab:focus-visible{outline:2px solid var(--brand-2); outline-offset:-2px}
+.code-tab b{grid-row:span 2; font-family:var(--mono); font-size:.66rem; font-weight:600; color:var(--fg-3); padding-top:.18rem; transition:color .2s}
+.code-tab .tt{font-size:.9rem; font-weight:600; color:var(--fg-2); letter-spacing:-.01em; transition:color .2s}
+.code-tab .loc{font-family:var(--mono); font-size:.62rem; color:var(--fg-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.code-tab[aria-selected="true"]{background:color-mix(in srgb, var(--pa) 9%, transparent)}
+.code-tab[aria-selected="true"]::before{content:""; position:absolute; left:0; top:.6rem; bottom:.6rem; width:2px; border-radius:2px; background:var(--pa); box-shadow:0 0 10px var(--pa)}
+.code-tab[aria-selected="true"] b{color:var(--pa)}
+.code-tab[aria-selected="true"] .tt{color:var(--fg)}
+.code-note{margin:auto 0 0; padding:1rem 1.15rem 1.15rem; border-top:1px solid var(--line); font-size:.86rem; line-height:1.6; color:var(--fg-2)}
+.code-note .lbl{display:block; margin-bottom:.45rem; color:var(--pa)}
+
+.code-pane{display:flex; flex-direction:column; min-width:0; background:rgba(5,7,11,.35)}
+.code-bar{display:flex; align-items:center; gap:.8rem; padding:.6rem 1rem; border-bottom:1px solid var(--line); font-family:var(--mono); font-size:.68rem; color:var(--fg-3); min-width:0}
+.code-path{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; min-width:0}
+.code-path bdi{direction:ltr}
+.code-path b{color:var(--fg); font-weight:500}
+.code-gh{margin-left:auto; flex:none; color:var(--fg-2); text-decoration:none; display:inline-flex; gap:.35rem; align-items:center; white-space:nowrap}
+.code-gh svg{width:11px; height:11px}
+.code-gh:hover{color:var(--pa)}
+.code-scroll{height:var(--code-h); overflow:auto; overscroll-behavior:contain; position:relative; scrollbar-width:thin; scrollbar-color:var(--bg-4) transparent}
+.code-lines{padding:.8rem 0 1.4rem; font-family:var(--mono); font-size:.76rem; line-height:1.72; tab-size:4; -moz-tab-size:4; min-width:max-content}
+.ln{display:flex; padding-right:1.5rem; animation:ln-in .38s cubic-bezier(.2,.7,.2,1) backwards}
+.ln:hover{background:rgba(234,239,247,.035)}
+.ln:hover .ln-no{color:var(--pa)}
+@keyframes ln-in{from{opacity:0; transform:translateX(-6px)}}
+.ln-no{flex:none; width:3.6rem; padding-right:1.1rem; text-align:right; color:#3f4a5f; text-decoration:none; user-select:none; transition:color .15s}
+.ln-tx{white-space:pre; color:#c9d3e3}
+.code-msg{display:grid; place-items:center; height:100%; padding:2rem; text-align:center; font-family:var(--mono); font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-3)}
+.code-msg a{color:var(--pa)}
+/* syntax — drawn from the page's accent family */
+.t-k{color:#c792ea}
+.t-t{color:#67d8ef}
+.t-f{color:#82aaff}
+.t-s{color:#b5e07a}
+.t-n{color:#fbbf24}
+.t-a{color:#ff7a8a}
+.t-c{color:#5d6a82; font-style:italic}
+
+@media (max-width:860px){
+  .code{--code-h:clamp(18rem,55vh,26rem)}
+  .code-body{grid-template-columns:minmax(0,1fr)}
+  .code-rail{border-right:0; border-bottom:1px solid var(--line)}
+  .code-tabs{flex-direction:row; overflow-x:auto; scrollbar-width:none; gap:.25rem}
+  .code-tabs::-webkit-scrollbar{display:none}
+  .code-tab{flex:none; grid-template-columns:1.5rem auto}
+  .code-tab .loc{display:none}
+  .code-tab b{grid-row:auto}
+  .code-tab[aria-selected="true"]::before{left:.7rem; right:.7rem; top:auto; bottom:0; width:auto; height:2px}
+  .code-note{margin:0}
+  .code-acts{margin-left:0; width:100%}
+  .code-act{flex:1 1 auto; justify-content:center}
+}
 
 /* ── tail ────────────────────────────────────── */
 .cap{margin:0; border-top:1px solid var(--line)}
@@ -463,6 +560,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     if (typeof m.exposure === "number") o.exposure = m.exposure;
     if (typeof m.env === "number") o.env = m.env;
     if (m.ao === false) o.ao = false;
+    if (m.spin === false) o.spin = false;
     return o;
   }
 
@@ -504,7 +602,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       host.setAttribute("data-model-opts", JSON.stringify(optsOf(m)));
 
       var load = el("div", "model-load");
-      if (m.poster) { load.style.backgroundImage = "url('" + src(slug, m.poster) + "')"; }
+      if (m.poster) { load.style.backgroundImage = "url('" + src(slug, m.poster) + "')"; load.className += " has-poster"; }
       load.appendChild(el("span", null, "Loading 3D"));
       host.appendChild(load);
 
@@ -529,39 +627,220 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       return fig;
     }
 
-    if (m) {
-      var idx = ALL.length;
+    var idx = ALL.length;
       ALL.push({ slug: slug, m: m, no: no, accent: accent || "--brand" });
-      var b = el("button", "frame"); b.type = "button";
-      b.setAttribute("aria-label", "Enlarge figure " + pad(no));
-      b.appendChild(thumb(slug, m));
-      if (m.type === "video" || m.type === "youtube") { var pl = el("div", "play"); pl.appendChild(el("i")); b.appendChild(pl); }
-      b.addEventListener("click", function () { open(idx); });
-      fig.appendChild(b);
-      cap.appendChild(el("span", "fig", "FIG " + pad(no)));
-      cap.appendChild(el("span", null, m.caption || ""));
-    } else {
-      var d = el("div", "frame empty");
-      var note = el("span", "empty-note");
-      note.appendChild(el("i"));
-      note.appendChild(document.createTextNode("Photo slot"));
-      d.appendChild(note);
-      fig.appendChild(d);
-      cap.appendChild(el("span", "fig", "FIG " + pad(no)));
-      cap.appendChild(el("span", null, "Reserved"));
-    }
+    var b = el("button", "frame"); b.type = "button";
+    b.setAttribute("aria-label", "Enlarge figure " + pad(no));
+    b.appendChild(thumb(slug, m));
+    if (m.type === "video" || m.type === "youtube") { var pl = el("div", "play"); pl.appendChild(el("i")); b.appendChild(pl); }
+    b.addEventListener("click", function () { open(idx); });
+    fig.appendChild(b);
+    cap.appendChild(el("span", "fig", "FIG " + pad(no)));
+    cap.appendChild(el("span", null, m.caption || ""));
     fig.appendChild(cap);
     return fig;
   }
 
-  function plateSet(slug, media, count, hero, accent) {
-    var items = (media || []).slice();
-    var n = SHOW_PLACEHOLDERS ? (count || 0) : 0;
-    if (!items.length && !n) return null;
+  function plateSet(slug, media, hero, accent) {
+    var items = media || [];
+    if (!items.length) return null;
     var box = el("div", "plates");
     items.forEach(function (m, i) { box.appendChild(plate(slug, m, hero && i === 0, accent)); });
-    for (var k = 0; k < n; k++) box.appendChild(plate(slug, null, hero && !items.length && k === 0, accent));
     if (box.children.length === 1) box.className = "plates single";
+    return box;
+  }
+
+  /* ── source viewer ──
+     Each excerpt is fetched from raw.githubusercontent.com at a pinned commit,
+     so the numbers in the gutter are the file's own line numbers and the
+     "on GitHub" link lands on exactly the same lines. */
+  var ICON = {
+    branch: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="4" cy="3.5" r="1.75"/><circle cx="4" cy="12.5" r="1.75"/><circle cx="12" cy="5" r="1.75"/><path d="M4 5.25v5.5M12 6.75c0 3-3 3.5-6.6 4.6"/></svg>',
+    out: '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5h-2v7h7v-2M7 2h3v3M10 2 5.5 6.5"/></svg>',
+    code: '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3 1.5 6 4 9M8 3l2.5 3L8 9"/></svg>'
+  };
+  function svgIn(n, svg) { n.insertAdjacentHTML("afterbegin", svg); return n; }
+
+  var KW = /^(abstract|boolean|break|case|catch|class|default|do|double|else|enum|extends|final|finally|float|for|if|implements|import|instanceof|int|interface|long|new|package|private|protected|public|record|return|static|super|switch|this|throw|throws|try|var|void|volatile|while|true|false|null)$/;
+  /* A small Java highlighter: comments, strings, keywords, types, calls,
+     numbers and annotations, carrying block comments across lines. */
+  function highlight(line, st, into) {
+    var i = 0, n = line.length, plain = "";
+    function flush() { if (plain) { into.appendChild(document.createTextNode(plain)); plain = ""; } }
+    function tok(cls, s) { flush(); into.appendChild(el("span", cls, s)); }
+    while (i < n) {
+      var rest = line.slice(i), m;
+      if (st.block) {
+        var e = rest.indexOf("*/");
+        var end = e < 0 ? n : i + e + 2;
+        tok("t-c", line.slice(i, end)); i = end; if (e >= 0) st.block = false; continue;
+      }
+      if (rest.indexOf("//") === 0) { tok("t-c", rest); break; }
+      if (rest.indexOf("/*") === 0) { st.block = true; tok("t-c", "/*"); i += 2; continue; }
+      if (rest[0] === '"' && (m = /^"(?:[^"\\]|\\.)*"?/.exec(rest))) { tok("t-s", m[0]); i += m[0].length; continue; }
+      if ((m = /^@[A-Za-z]\w*/.exec(rest))) { tok("t-a", m[0]); i += m[0].length; continue; }
+      if (!/[\w$]/.test(line[i - 1] || "") && (m = /^\d[\d_]*(?:\.\d+)?(?:[eE][-+]?\d+)?[dDfFlL]?/.exec(rest))) { tok("t-n", m[0]); i += m[0].length; continue; }
+      if ((m = /^[A-Za-z_$][\w$]*/.exec(rest))) {
+        var w = m[0], call = /^\s*\(/.test(line.slice(i + w.length));
+        if (KW.test(w)) tok("t-k", w);
+        else if (call) tok("t-f", w);
+        else if (/^[A-Z]/.test(w)) tok("t-t", w);
+        else plain += w;
+        i += w.length; continue;
+      }
+      plain += line[i]; i += 1;
+    }
+    flush();
+  }
+
+  var rawCache = {};
+  function getFile(c, path) {
+    var url = "https://raw.githubusercontent.com/" + c.repo + "/" + c.ref + "/" + c.root + path;
+    if (!rawCache[url]) {
+      rawCache[url] = fetch(url).then(function (r) { return r.ok ? r.text() : Promise.reject(new Error(r.status)); });
+      rawCache[url].catch(function () { delete rawCache[url]; });
+    }
+    return rawCache[url];
+  }
+
+  function codeView(c) {
+    var gh = "https://github.com/" + c.repo;
+    function blob(f) { return gh + "/blob/" + c.ref + "/" + c.root + f.path; }
+
+    var box = el("div", "code");
+
+    var hd = el("div", "code-hd");
+    var id = svgIn(el("div", "code-id"), ICON.branch);
+    var repo = el("a", "code-repo"); repo.href = gh; repo.rel = "noopener"; repo.target = "_blank";
+    var parts = c.repo.split("/");
+    repo.appendChild(el("span", null, parts[0] + " / ")); repo.appendChild(document.createTextNode(parts[1]));
+    id.appendChild(repo);
+    var ref = el("a", "code-ref", "@ " + c.ref.slice(0, 7));
+    ref.href = gh + "/tree/" + c.ref; ref.rel = "noopener"; ref.target = "_blank";
+    ref.title = "The exact commit these excerpts are from";
+    id.appendChild(ref);
+    hd.appendChild(id);
+
+    var acts = el("div", "code-acts");
+    var edit = svgIn(el("a", "code-act pri", "Open in editor"), ICON.code);
+    edit.rel = "noopener"; edit.target = "_blank"; edit.title = "github.dev: VS Code in the browser, nothing to install";
+    var browse = svgIn(el("a", "code-act", "Repository"), ICON.out);
+    browse.href = gh; browse.rel = "noopener"; browse.target = "_blank";
+    acts.appendChild(edit); acts.appendChild(browse);
+    hd.appendChild(acts);
+    box.appendChild(hd);
+
+    var body = el("div", "code-body");
+    var rail = el("div", "code-rail");
+    var tabs = el("div", "code-tabs");
+    tabs.setAttribute("role", "tablist");
+    tabs.setAttribute("aria-label", "Code excerpts");
+    var note = el("p", "code-note"), noteTx = el("span");
+    note.appendChild(el("span", "lbl", "Why it's here")); note.appendChild(noteTx);
+    rail.appendChild(tabs); rail.appendChild(note);
+
+    var pane = el("div", "code-pane");
+    pane.setAttribute("role", "tabpanel");
+    var bar = el("div", "code-bar");
+    var path = el("span", "code-path");
+    var onGh = svgIn(el("a", "code-gh"), ICON.out);
+    var onGhTx = document.createTextNode("");
+    onGh.appendChild(onGhTx);
+    onGh.rel = "noopener"; onGh.target = "_blank"; onGh.title = "Open these lines on GitHub";
+    bar.appendChild(path); bar.appendChild(onGh);
+    var scroll = el("div", "code-scroll");
+    scroll.tabIndex = 0;
+    pane.appendChild(bar); pane.appendChild(scroll);
+
+    body.appendChild(rail); body.appendChild(pane);
+    box.appendChild(body);
+
+    var btns = [], cur = -1, started = false;
+    c.files.forEach(function (f, i) {
+      var b = el("button", "code-tab"); b.type = "button";
+      b.setAttribute("role", "tab");
+      b.appendChild(el("b", null, pad(i + 1)));
+      b.appendChild(el("span", "tt", f.title));
+      b.appendChild(el("span", "loc", f.path.split("/").pop() + " · L" + f.lines[0] + "–" + f.lines[1]));
+      b.addEventListener("click", function () { select(i); });
+      btns.push(b); tabs.appendChild(b);
+    });
+    tabs.addEventListener("keydown", function (e) {
+      var d = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      var k = (cur + d + btns.length) % btns.length;
+      select(k); btns[k].focus();
+    });
+
+    function render(f, text) {
+      var all = text.replace(/\r/g, "").split("\n");
+      var a = f.lines[0], z = Math.min(f.lines[1], all.length);
+      var slice = all.slice(a - 1, z);
+      /* drop the indentation the excerpt shares, so it starts at the margin */
+      var cut = Infinity;
+      slice.forEach(function (l) { if (l.trim()) cut = Math.min(cut, /^\s*/.exec(l)[0].length); });
+      if (!isFinite(cut)) cut = 0;
+      /* an excerpt can open inside a block comment; replay what came before */
+      var st = { block: false };
+      all.slice(0, a - 1).forEach(function (l) { highlight(l, st, document.createDocumentFragment()); });
+      var pre = el("div", "code-lines");
+      slice.forEach(function (l, k) {
+        var row = el("div", "ln");
+        row.style.animationDelay = Math.min(k * 9, 260) + "ms";
+        var no = el("a", "ln-no", String(a + k));
+        no.href = blob(f) + "#L" + (a + k); no.tabIndex = -1; no.rel = "noopener"; no.target = "_blank";
+        var tx = el("span", "ln-tx");
+        if (l.trim()) highlight(l.slice(cut), st, tx); else tx.textContent = " ";
+        row.appendChild(no); row.appendChild(tx);
+        pre.appendChild(row);
+      });
+      scroll.textContent = "";
+      scroll.appendChild(pre);
+      scroll.scrollTop = 0; scroll.scrollLeft = 0;
+    }
+
+    function load() {
+      var i = cur, f = c.files[i];
+      scroll.textContent = "";
+      scroll.appendChild(el("div", "code-msg", "Fetching " + f.path.split("/").pop() + "…"));
+      getFile(c, f.path).then(function (t) { if (cur === i) render(f, t); }, function () {
+        if (cur !== i) return;
+        scroll.textContent = "";
+        var msg = el("div", "code-msg"), p = el("span", null, "GitHub didn't answer. ");
+        var a = el("a", null, "Read it there instead"); a.href = onGh.href; a.rel = "noopener";
+        p.appendChild(a); msg.appendChild(p); scroll.appendChild(msg);
+      });
+    }
+
+    function select(i) {
+      if (i === cur) return;
+      cur = i;
+      var f = c.files[i];
+      btns.forEach(function (b, k) { b.setAttribute("aria-selected", k === i ? "true" : "false"); b.tabIndex = k === i ? 0 : -1; });
+      noteTx.textContent = f.note || "";
+      var dirs = f.path.split("/"), file = dirs.pop();
+      path.textContent = "";
+      var bd = document.createElement("bdi");
+      bd.appendChild(document.createTextNode(c.root.replace(/^src\/main\/java\//, "") + (dirs.length ? dirs.join("/") + "/" : "")));
+      bd.appendChild(el("b", null, file));
+      path.appendChild(bd);
+      onGhTx.nodeValue = "L" + f.lines[0] + "–" + f.lines[1];
+      onGh.href = blob(f) + "#L" + f.lines[0] + "-L" + f.lines[1];
+      edit.href = "https://github.dev/" + c.repo + "/blob/" + c.ref + "/" + c.root + f.path;
+      if (started) load();
+    }
+
+    /* nothing is fetched until the viewer is close to the screen */
+    function start() { if (!started) { started = true; load(); } }
+    select(0);
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (es) {
+        if (es.some(function (e) { return e.isIntersecting; })) { io.disconnect(); start(); }
+      }, { rootMargin: "500px" });
+      io.observe(box);
+    }
+    setTimeout(start, 3000);
     return box;
   }
 
@@ -603,13 +882,11 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 
     var body = el("div", "sh-body");
 
-    var ps = plateSet(p.slug, p.media, p.placeholders, false, accent);
+    var ps = plateSet(p.slug, p.media, false, accent);
     if (ps) {
       var mcol = el("div", "sh-media");
       mcol.appendChild(ps);
       body.appendChild(mcol);
-    } else {
-      body.className = "sh-body no-media";
     }
 
     var text = el("div", "sh-text");
@@ -620,8 +897,9 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       text.appendChild(ol);
     }
 
+    var sb = null;
     if (p.specs && p.specs.length) {
-      var sb = el("div", "spec-block");
+      sb = el("div", "spec-block");
       sb.appendChild(el("span", "lbl", "Specification"));
       var dl = el("dl", "spec");
       p.specs.forEach(function (row) {
@@ -641,10 +919,20 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 
     var lk = el("div", "sh-links");
     (p.links || []).forEach(function (l) { var a = el("a", "plink", l.label); a.href = l.href; a.rel = "noopener"; lk.appendChild(a); });
-    text.appendChild(lk);
 
-    body.appendChild(text);
+    if (ps) {
+      text.appendChild(lk);
+      body.appendChild(text);
+    } else {
+      /* no pictures: prose on the left, the spec sheet beside it */
+      var side = sb ? sb.parentNode.removeChild(sb) : null;
+      text.appendChild(lk);
+      body.appendChild(text);
+      if (side) { var aside = el("div", "sh-side"); aside.appendChild(side); body.appendChild(aside); }
+      else body.className = "sh-body no-media";
+    }
     s.appendChild(body);
+    if (p.code) s.appendChild(codeView(p.code));
 
     sheets.appendChild(s);
   });
@@ -864,11 +1152,32 @@ window.__mount3D = function (host, url, opts) {
   const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 1000);
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
-  controls.autoRotateSpeed = 0.8;
-  controls.autoRotate = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // once someone takes hold of it, the idle spin does not come back and drag
-  // the view out from under whatever they had lined up
-  controls.addEventListener("start", () => { controls.autoRotate = false; });
+  controls.autoRotateSpeed = 1.6;
+  const spin = opts.spin !== false && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // the spin waits for the model, so it never starts on an empty frame
+  controls.autoRotate = false;
+
+  // Once someone takes hold of it the idle spin stops, so it never drags the
+  // view out from under what they lined up. Restore eases back to the opening
+  // shot and picks the spin up again.
+  const restore = document.createElement("button");
+  restore.type = "button";
+  restore.className = "model-reset";
+  restore.setAttribute("aria-label", "Restore the starting view");
+  restore.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 6.6A3.9 3.9 0 1 0 3.3 3.2"/><path d="M2.4 1.6v2.1h2.1"/></svg>Restore';
+  host.appendChild(restore);
+  let home = null, tween = null;
+  controls.addEventListener("start", () => {
+    tween = null;
+    controls.autoRotate = false;
+    if (home) restore.classList.add("on");
+  });
+  restore.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!home) return;
+    restore.classList.remove("on");
+    tween = { t0: performance.now(), pos: camera.position.clone(), tgt: controls.target.clone() };
+  });
 
   // Same pipeline as the Ramtech-Web viewer: render into an HDR float buffer
   // and let OutputPass do the tone mapping, rather than tone mapping in the
@@ -946,20 +1255,49 @@ window.__mount3D = function (host, url, opts) {
       // catch a highlight from, and gold reads as dull olive.
       scene.add(root);
 
-      // frame the whole assembly from its bounding sphere
       // precise: the quick box unions each rotated part's local box, which made
       // Rico 1.0 m tall instead of 0.62 m and framed it far too loosely
-      const sphere = new THREE.Box3().setFromObject(root, true).getBoundingSphere(new THREE.Sphere());
-      const dist = sphere.radius / Math.sin((camera.fov * Math.PI) / 360);
-      controls.target.copy(sphere.center);
-      // 1.05 rather than 1.15: framing is bounding-sphere based, so the model
-      // can never clip as it spins — the extra margin only made it look small
-      camera.position.copy(sphere.center).add(
-        new THREE.Vector3(0.55, 0.42, 0.72).normalize().multiplyScalar(dist * 1.05));
+      const box = new THREE.Box3().setFromObject(root, true);
+      const sphere = box.getBoundingSphere(new THREE.Sphere());
+      const center = box.getCenter(new THREE.Vector3());
+      const dir = new THREE.Vector3(0.55, 0.42, 0.72).normalize();
+
+      // Fit the model's actual shape, not its bounding sphere or box: both are
+      // padded with empty corners the robot never fills, which left it small in
+      // a big empty plate. A sample of real vertices is tested from every angle
+      // of the spin, so whichever side faces the camera it still fits.
+      const pts = [], v = new THREE.Vector3();
+      root.traverse((o) => {
+        const pos = o.isMesh && o.geometry && o.geometry.attributes.position;
+        if (!pos) return;
+        const step = Math.max(1, Math.floor(pos.count / 3000));
+        for (let i = 0; i < pos.count; i += step) {
+          pts.push(v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld).sub(center).clone());
+        }
+      });
+      const up = new THREE.Vector3(0, 1, 0);
+      const elev = Math.asin(dir.y), az0 = Math.atan2(dir.x, dir.z);
+      const tanV = Math.tan((camera.fov * Math.PI) / 360), tanH = tanV * camera.aspect;
+      let dist = 0;
+      for (let k = 0; k < 36; k++) {
+        const az = az0 + (k / 36) * Math.PI * 2;
+        const d = new THREE.Vector3(Math.cos(elev) * Math.sin(az), Math.sin(elev), Math.cos(elev) * Math.cos(az));
+        const r = new THREE.Vector3().crossVectors(up, d).normalize();
+        const u = new THREE.Vector3().crossVectors(d, r);
+        for (const p of pts) {
+          const z = p.dot(d);
+          dist = Math.max(dist, Math.abs(p.dot(r)) / tanH + z, Math.abs(p.dot(u)) / tanV + z);
+        }
+      }
+      dist = (dist || sphere.radius * 2) * 1.05;
+      controls.target.copy(center);
+      camera.position.copy(center).add(dir.clone().multiplyScalar(dist));
       camera.near = Math.max(dist / 1000, 1e-4);
       camera.far = dist * 12;
       camera.updateProjectionMatrix();
       controls.update();
+      home = { pos: camera.position.clone(), tgt: center.clone() };
+      controls.autoRotate = spin;
 
       // AO radius has to follow the model's scale, so it is set once the
       // bounding sphere is known rather than guessed at a world size
@@ -975,7 +1313,15 @@ window.__mount3D = function (host, url, opts) {
       }
 
       host.classList.add("ready");
-      const tick = () => { controls.update(); composer.render(); raf = requestAnimationFrame(tick); };
+      const tick = (now) => {
+        if (tween) {
+          const t = Math.min((now - tween.t0) / 700, 1), e = 1 - Math.pow(1 - t, 3);
+          camera.position.lerpVectors(tween.pos, home.pos, e);
+          controls.target.lerpVectors(tween.tgt, home.tgt, e);
+          if (t === 1) { tween = null; controls.autoRotate = spin; }
+        }
+        controls.update(); composer.render(); raf = requestAnimationFrame(tick);
+      };
       raf = requestAnimationFrame(tick);
     },
     undefined,
@@ -994,6 +1340,7 @@ window.__mount3D = function (host, url, opts) {
       cancelAnimationFrame(raf);
       ro.disconnect();
       controls.dispose();
+      restore.remove();
       if (root) {
         root.traverse((o) => {
           if (!o.isMesh) return;

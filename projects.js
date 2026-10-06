@@ -13,15 +13,13 @@
 
    The first item becomes the project's lead image.
 
-   PLACEHOLDERS
+   SHOWING CODE
    ------------
-   Until you add real media, empty plates are drawn so the layout reads as
-   intended. Each project's `placeholders:` number says how many to draw.
-   When you've added your photos, set SHOW_PLACEHOLDERS to false — or just
-   delete the `placeholders` line from that project.
+   A project with a `code:` block gets a source viewer under it. Each excerpt
+   is a real file and line range, fetched from GitHub at the pinned commit, so
+   the line numbers always match what the "on GitHub" link opens. To move to
+   newer code, change `ref` and re-check the line ranges.
    ========================================================================= */
-
-const SHOW_PLACEHOLDERS = true;
 
 /* helpers — leave these alone */
 const img = (file, caption) => ({ type: "image", file, caption });
@@ -34,6 +32,7 @@ const yt = (id, caption) => ({ type: "youtube", id, caption });
      exposure  overrides the default 0.5. Lower is darker.
      env       how much the studio light fills it in, 0–1. Default 1.
      ao        false turns off the screen-space contact shadows.
+     spin      false keeps it still instead of slowly orbiting.
    Keep .glb files under ~6 MB — see media/README.md. */
 const mdl = (file, caption, opts) =>
   Object.assign({ type: "model", file, caption }, opts || {});
@@ -72,34 +71,68 @@ const PROJECTS = [
     status: "In season",
     lead: true,                 /* gets the big plate at the top of the page */
     logo: "rico-logo.webp",     /* optional, from media/<slug>/ — shown beside the title */
-    placeholders: 2,
     summary:
-      "A swerve drivetrain, a two-stage shooter and a full intake path, written " +
-      "against AdvantageKit's IO pattern — so every subsystem has a simulated " +
-      "twin and every match replays from its log.",
+      "Swerve drive and a turreted shooter that keeps firing while the robot " +
+      "moves. Written against AdvantageKit's IO pattern, so every subsystem has " +
+      "a simulated twin and every match replays from its log.",
     specs: [
       ["Drive", "Swerve · 4 modules"],
       ["Control", "WPILib + AdvantageKit"],
+      ["Shooter", "Turret · hood · flywheel"],
       ["Motors", "Phoenix 6 · TalonFX / TalonFXS"],
-      ["Sensing", "PhotonVision · NavX / Pigeon 2"],
+      ["Sensing", "PhotonVision · Limelight · Pigeon 2"],
       ["Auto", "PathPlanner"],
       ["Language", "Java"],
     ],
     notes: [
+      "The shot is solved from physics every loop: pick an apex, solve flight time, subtract the robot's own velocity, correct the flywheel for drag.",
       "Every subsystem talks to an interface, never to hardware directly. The same code drives a real TalonFX or a simulation, decided at startup.",
-      "Odometry is sampled on its own Phoenix thread rather than the main robot loop, so pose updates arrive faster than the 20 ms tick.",
       "An AutoSystemsCheck command exercises every mechanism in the pit before a match, instead of finding a dead motor on the field.",
     ],
-    links: [{ label: "Source", href: "https://github.com/L13V/2026_59" }],
+    links: [],                  /* the source viewer below links to the repo */
+    code: {
+      repo: "L13V/2026_59",
+      ref: "8472469e7a3e07686f2de451cba5eaad9be3431f",
+      root: "src/main/java/org/ramtech/frc2026/",
+      files: [
+        {
+          title: "Shooting on the move",
+          path: "subsystems/shooter/ShotCalculator.java",
+          lines: [288, 318],
+          note: "The robot's own velocity is rotated into the target's frame and taken out of the shot, so Rico aims where the ball will be, not where the hub is.",
+        },
+        {
+          title: "Correcting for drag",
+          path: "subsystems/shooter/ShotCalculator.java",
+          lines: [363, 386],
+          note: "A drag estimate raises the launch speed, which is then turned into flywheel RPS from the wheel and gear ratios and clamped to what the motor can hold.",
+        },
+        {
+          title: "Turret wrap",
+          path: "subsystems/shooter/ShotCalculator.java",
+          lines: [137, 159],
+          note: "The turret can't spin forever. Each new aim takes the shortest way round, and unwinds a full turn when it would run into a soft limit.",
+        },
+        {
+          title: "The IO seam",
+          path: "subsystems/shooter/flywheel/FlywheelIO.java",
+          lines: [6, 52],
+          note: "Hardware sits behind an interface whose inputs and outputs are logged. TalonFX and simulation both implement it, which is what makes log replay exact.",
+        },
+        {
+          title: "Pit check",
+          path: "commands/AutoSystemsCheck.java",
+          lines: [19, 43],
+          note: "One command drives, sweeps the turret and hood to both soft limits, spins the flywheel and runs every roller — before a match, not during one.",
+        },
+      ],
+    },
     media: [
-      /* Live 3D — drag to orbit, scroll to zoom.
-         Rico, the 2026 robot. Compressed from 12.6 MB to 4.9 MB; see
-         media/README.md for the exact command if you re-export it. */
-      mdl("rico-2026.glb", "Rico — the 2026 robot. Drag to orbit, scroll to zoom"),
+      /* Compressed from 12.6 MB to 4.9 MB; see media/README.md for the exact
+         command if you re-export it. The poster is a still of the viewer's
+         opening shot, so the hand-off to the live model doesn't jump. */
+      mdl("rico-2026.glb", "Rico — the 2026 robot. Drag to orbit, scroll to zoom", { poster: "rico-poster.webp" }),
       img("architecture.svg", "Subsystem layout — each one behind an IO interface, with a simulated implementation beside the real one"),
-      // Match footage and robot photos go here, e.g.:
-      // yt("VIDEO_ID", "Qualification match 42"),
-      // img("robot-front.jpg", "Competition robot, front view"),
     ],
   },
 
@@ -110,7 +143,6 @@ const PROJECTS = [
     kind: "Full stack",
     period: "2026",
     status: "v1.0.15",
-    placeholders: 2,
     summary:
       "A full-screen listening-party dashboard for a TV, and the operating system " +
       "it boots into. Guests scan a QR on screen, land in the Spotify Jam, and " +
@@ -144,7 +176,6 @@ const PROJECTS = [
     kind: "Robotics",
     period: "2024",
     status: "Complete",
-    placeholders: 2,
     summary:
       "Menu-driven control for three DJI Tello EDU drones on a shared swarm " +
       "network — scripted liftoff, choreographed shows, and the safety controls " +
@@ -171,7 +202,6 @@ const PROJECTS = [
     kind: "Robot code",
     period: "2025",
     status: "Season complete",
-    placeholders: 1,
     summary:
       "Last season's competition code, and the two offseason rewrites that " +
       "followed it. The groundwork the 2026 architecture was built on.",
@@ -199,7 +229,6 @@ const PROJECTS = [
     kind: "Infrastructure",
     period: "2024",
     status: "In use",
-    placeholders: 0,
     summary:
       "Shell tooling that manages DNS records from a terminal instead of a " +
       "provider dashboard — because hand-editing a zone is how you get a typo " +
@@ -222,7 +251,6 @@ const PROJECTS = [
     kind: "Web",
     period: "2026",
     status: "This page",
-    placeholders: 0,
     summary:
       "This site. One page, no build step, no dependencies — it renders fully " +
       "offline from a content file and enriches itself from the GitHub API when " +
