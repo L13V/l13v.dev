@@ -24,7 +24,7 @@
 /* helpers — leave these alone */
 const img = (file, caption) => ({ type: "image", file, caption });
 const vid = (file, caption, poster) => ({ type: "video", file, caption, poster });
-const yt = (id, caption) => ({ type: "youtube", id, caption });
+const yt = (id, caption, opts) => Object.assign({ type: "youtube", id, caption }, opts || {});
 /* mdl() is a live 3D model (.glb) you can orbit. Models are lit exactly the way
    the Ramtech-Web CAD viewer lights them, so nothing needs configuring.
    The third argument is an options object if you ever need to deviate:
@@ -86,6 +86,12 @@ const PROJECTS = [
     ],
     notes: [],                  /* the detail lives in the code viewer */
     links: [],                  /* the code viewer links to the repo */
+    /* "See it in action" — footage opens in the media viewer. Shorts are
+       portrait, so mark them { vertical: true }. */
+    action: [
+      yt("XTC8Qh_Npd8", "Final 2, South Florida Regional", { label: "MATCH" }),
+      yt("2cPXvFHHiM4", "Practice", { label: "PRACTICE", vertical: true }),
+    ],
     code: {
       repo: "L13V/2026_59",
       ref: "8472469e7a3e07686f2de451cba5eaad9be3431f",

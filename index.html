@@ -272,9 +272,15 @@ dl.spec{margin:0}
 }
 .code-open .txt{display:flex; flex-direction:column; min-width:0}
 .code-open .txt b{font-size:.95rem; font-weight:600; letter-spacing:-.01em; color:var(--fg)}
-.code-open .txt small{font-family:var(--mono); font-size:.62rem; letter-spacing:.06em; color:var(--fg-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.code-open .txt small{font-family:var(--mono); font-size:.62rem; letter-spacing:.06em; line-height:1.45; color:var(--fg-3)}
 .code-open .arr{margin-left:auto; font-family:var(--mono); color:var(--pa); transition:transform .25s}
 .code-open:hover .arr{transform:translateX(3px)}
+/* the action card leads with a frame from the match */
+.code-open .ico.thumb{width:3.6rem; height:2.4rem; background-size:cover; background-position:center; position:relative; overflow:hidden}
+.code-open .ico.thumb::before{content:""; position:absolute; inset:0; background:rgba(8,11,17,.35)}
+.code-open .ico.thumb::after{content:""; position:relative; border-style:solid; border-width:6px 0 6px 10px; border-color:transparent transparent transparent #fff; margin-left:2px}
+.sh-links:has(.code-open + .code-open){display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.7rem}
+@media (max-width:560px){.sh-links:has(.code-open + .code-open){grid-template-columns:1fr}}
 
 /* the viewer opens over the page */
 .cv{position:fixed; inset:0; z-index:500; display:grid; place-items:center; padding:clamp(.5rem,3vw,2.5rem); background:rgba(5,7,11,.78); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); animation:cv-fade .25s ease}
@@ -419,6 +425,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 .lb-stage{position:relative; display:grid; place-items:center; min-height:0; padding:clamp(.6rem,2vw,1.5rem) clamp(.5rem,5vw,4.5rem)}
 .lb-stage img,.lb-stage video,.lb-stage iframe{max-width:100%; max-height:100%; width:auto; height:auto; border-radius:var(--r); background:#000; box-shadow:0 30px 80px -30px rgba(0,0,0,.9)}
 .lb-stage iframe{width:min(100%,1080px); aspect-ratio:16/9; height:auto; border:0}
+.lb-stage iframe.vert{width:auto; height:min(calc(100vh - 10rem), 820px); max-width:100%; aspect-ratio:9/16}
 .lb-nav{position:absolute; top:50%; transform:translateY(-50%)}
 .lb-prev{left:clamp(.25rem,1.5vw,1rem)} .lb-next{right:clamp(.25rem,1.5vw,1rem)}
 .lb-cap{margin:0; padding:.95rem var(--gut) 1.4rem; font-family:var(--mono); font-size:.76rem; line-height:1.55; color:#9aa7bd; text-align:center}
@@ -892,6 +899,25 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     return { box: box, start: start, close: x, focus: function () { btns[cur].focus(); } };
   }
 
+  /* Footage gets its own card, opening the media viewer on just these videos. */
+  function actionButton(p, accent) {
+    var items = p.action.map(function (m) {
+      return { slug: p.slug, m: m, accent: accent, label: m.label || "VIDEO" };
+    });
+    var b = el("button", "code-open"); b.type = "button";
+    b.setAttribute("aria-haspopup", "dialog");
+    var lead = p.action[0], ic = el("span", "ico thumb");
+    if (lead.type === "youtube") ic.style.backgroundImage = "url('https://img.youtube.com/vi/" + lead.id + "/mqdefault.jpg')";
+    b.appendChild(ic);
+    var t = el("span", "txt");
+    t.appendChild(el("b", null, "See it in action"));
+    t.appendChild(el("small", null, p.action.map(function (m) { return m.label ? m.label.charAt(0) + m.label.slice(1).toLowerCase() : "Video"; }).join(" + ")));
+    b.appendChild(t);
+    b.appendChild(el("span", "arr", "\u2192"));
+    b.addEventListener("click", function () { open(0, items); });
+    return b;
+  }
+
   /* One button on the sheet; the viewer is built the first time it's asked for. */
   function codeButton(c, accent) {
     var excerpts = c.files.filter(function (f) { return !f.image; }).length;
@@ -900,7 +926,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     b.appendChild(el("span", "ico", "</>"));
     var t = el("span", "txt");
     t.appendChild(el("b", null, "Read the code"));
-    t.appendChild(el("small", null, (c.files.length > excerpts ? "Architecture + " : "") + excerpts + " excerpts · " + c.repo));
+    t.appendChild(el("small", null, (c.files.length > excerpts ? "Architecture + " : "") + excerpts + " excerpts"));
     b.appendChild(t);
     b.appendChild(el("span", "arr", "\u2192"));
 
@@ -1003,6 +1029,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     }
 
     var lk = el("div", "sh-links");
+    if (p.action && p.action.length) lk.appendChild(actionButton(p, accent));
     if (p.code) lk.appendChild(codeButton(p.code, accent));
     (p.links || []).forEach(function (l) { var a = el("a", "plink", l.label); a.href = l.href; a.rel = "noopener"; lk.appendChild(a); });
 
@@ -1067,7 +1094,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   var lb = document.getElementById("lb"), stage = document.getElementById("lb-stage");
   var capN = document.getElementById("lb-cap"), figN = document.getElementById("lb-fig"), ctN = document.getElementById("lb-ct");
   var prev = document.getElementById("lb-prev"), next = document.getElementById("lb-next"), x = document.getElementById("lb-x");
-  var at = 0, back = null, node = null, lbViewer = null, mountToken = 0;
+  var at = 0, list = ALL, back = null, node = null, lbViewer = null, mountToken = 0;
 
   function clear() {
     mountToken += 1;                 /* invalidates any mount still in flight */
@@ -1078,7 +1105,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   }
   function show() {
     clear();
-    var f = ALL[at], m = f.m, n, mountUrl = null, mountOpts = null;
+    var f = list[at], m = f.m, n, mountUrl = null, mountOpts = null;
     lb.style.setProperty("--pa", "var(" + f.accent + ")");
     if (m.type === "model") {
       n = document.createElement("div");
@@ -1090,6 +1117,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       n.src = "https://www.youtube-nocookie.com/embed/" + m.id + "?autoplay=1&rel=0";
       n.allow = "autoplay; encrypted-media; picture-in-picture";
       n.setAttribute("allowfullscreen", ""); n.title = m.caption || "Video";
+      if (m.vertical) n.className = "vert";
     } else if (m.type === "video") {
       n = document.createElement("video"); n.src = src(f.slug, m.file);
       n.controls = true; n.autoplay = true; n.playsInline = true;
@@ -1105,16 +1133,16 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       });
     }
     capN.textContent = m.caption || "";
-    figN.textContent = "FIG " + pad(f.no);
-    ctN.textContent = (at + 1) + " of " + ALL.length;
-    prev.hidden = next.hidden = ALL.length < 2;
+    figN.textContent = f.label || "FIG " + pad(f.no);
+    ctN.textContent = (at + 1) + " of " + list.length;
+    prev.hidden = next.hidden = list.length < 2;
   }
-  function open(i) {
-    at = i; back = document.activeElement;
+  function open(i, items) {
+    at = i; list = items || ALL; back = document.activeElement;
     lb.hidden = false; document.body.style.overflow = "hidden"; show(); x.focus();
   }
   function close() { clear(); lb.hidden = true; document.body.style.overflow = ""; if (back && back.focus) back.focus(); }
-  function step(d) { at = (at + d + ALL.length) % ALL.length; show(); }
+  function step(d) { at = (at + d + list.length) % list.length; show(); }
 
   x.addEventListener("click", close);
   prev.addEventListener("click", function () { step(-1); });
