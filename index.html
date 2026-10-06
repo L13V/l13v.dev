@@ -213,6 +213,10 @@ figcaption{font-family:var(--mono); font-size:.68rem; line-height:1.5; color:var
 .chip.live i{animation:ping2 2s ease-out infinite}
 @keyframes ping2{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--pa) 60%, transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
 h2{font-weight:700; font-size:clamp(1.5rem,3.4vw,2.3rem); line-height:1.08; letter-spacing:-.03em; margin:0 0 1.6rem; max-width:24ch; text-wrap:balance}
+.sh-title{display:flex; align-items:center; justify-content:space-between; gap:1.5rem; margin:0 0 1.6rem}
+.sh-title h2{margin:0}
+.sh-logo{height:clamp(2.6rem,6vw,4.2rem); width:auto; flex:none}
+@media (max-width:560px){.sh-title{flex-direction:column-reverse; align-items:flex-start; gap:1rem}}
 /* Media sits BESIDE the prose, not under it — otherwise a project's height is
    text + images stacked and nothing fits on one screen. */
 .sh-body{display:grid; grid-template-columns:minmax(0,1.08fr) minmax(0,1fr); gap:clamp(1.4rem,3vw,2.8rem); align-items:start}
@@ -586,7 +590,16 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       head.appendChild(c);
     }
     s.appendChild(head);
-    s.appendChild(el("h2", null, p.title));
+    if (p.logo) {
+      var tl = el("div", "sh-title");
+      tl.appendChild(el("h2", null, p.title));
+      var lg = document.createElement("img");
+      lg.className = "sh-logo"; lg.src = "media/" + p.slug + "/" + p.logo; lg.alt = ""; lg.decoding = "async";
+      tl.appendChild(lg);
+      s.appendChild(tl);
+    } else {
+      s.appendChild(el("h2", null, p.title));
+    }
 
     var body = el("div", "sh-body");
 

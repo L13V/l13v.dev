@@ -71,6 +71,7 @@ const PROJECTS = [
     period: "2026",
     status: "In season",
     lead: true,                 /* gets the big plate at the top of the page */
+    logo: "rico-logo.webp",     /* optional, from media/<slug>/ — shown beside the title */
     placeholders: 2,
     summary:
       "A swerve drivetrain, a two-stage shooter and a full intake path, written " +
