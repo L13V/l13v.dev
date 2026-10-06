@@ -15,7 +15,7 @@
 
    SHOWING CODE
    ------------
-   A project with a `code:` block gets a source viewer under it. Each excerpt
+   A project with a `code:` block gets a "Read the code" button. Each excerpt
    is a real file and line range, fetched from GitHub at the pinned commit, so
    the line numbers always match what the "on GitHub" link opens. To move to
    newer code, change `ref` and re-check the line ranges.
@@ -84,17 +84,18 @@ const PROJECTS = [
       ["Auto", "PathPlanner"],
       ["Language", "Java"],
     ],
-    notes: [
-      "The shot is solved from physics every loop: pick an apex, solve flight time, subtract the robot's own velocity, correct the flywheel for drag.",
-      "Every subsystem talks to an interface, never to hardware directly. The same code drives a real TalonFX or a simulation, decided at startup.",
-      "An AutoSystemsCheck command exercises every mechanism in the pit before a match, instead of finding a dead motor on the field.",
-    ],
-    links: [],                  /* the source viewer below links to the repo */
+    notes: [],                  /* the detail lives in the code viewer */
+    links: [],                  /* the code viewer links to the repo */
     code: {
       repo: "L13V/2026_59",
       ref: "8472469e7a3e07686f2de451cba5eaad9be3431f",
       root: "src/main/java/org/ramtech/frc2026/",
       files: [
+        {
+          title: "Architecture",
+          image: "media/2026_59/architecture.svg",
+          note: "Each subsystem sits behind an IO interface, with a simulated implementation beside the real one. Commands never touch hardware directly.",
+        },
         {
           title: "Shooting on the move",
           path: "subsystems/shooter/ShotCalculator.java",
@@ -132,7 +133,6 @@ const PROJECTS = [
          command if you re-export it. The poster is a still of the viewer's
          opening shot, so the hand-off to the live model doesn't jump. */
       mdl("rico-2026.glb", "Rico — the 2026 robot. Drag to orbit, scroll to zoom", { poster: "rico-poster.webp" }),
-      img("architecture.svg", "Subsystem layout — each one behind an IO interface, with a simulated implementation beside the real one"),
     ],
   },
 

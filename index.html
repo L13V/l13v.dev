@@ -255,9 +255,43 @@ dl.spec{margin:0}
 
 /* ── source viewer ───────────────────────────── */
 .sh-side{min-width:0}
+/* the trigger: one quiet card in the project's links row */
+.code-open{
+  all:unset; box-sizing:border-box; cursor:pointer; display:flex; align-items:center; gap:.85rem;
+  width:100%; padding:.8rem 1rem .8rem .8rem; border-radius:calc(var(--r) + 2px);
+  border:1px solid color-mix(in srgb, var(--pa) 38%, var(--line)); position:relative; overflow:hidden;
+  background:linear-gradient(100deg, color-mix(in srgb, var(--pa) 12%, transparent), transparent 70%);
+  transition:border-color .25s, transform .25s, box-shadow .25s;
+}
+.code-open:hover{border-color:var(--pa); transform:translateY(-2px); box-shadow:0 14px 34px -18px color-mix(in srgb, var(--pa) 75%, transparent)}
+.code-open:focus-visible{outline:2px solid var(--brand-2); outline-offset:3px}
+.code-open .ico{
+  width:2.4rem; height:2.4rem; flex:none; border-radius:7px; display:grid; place-items:center;
+  background:color-mix(in srgb, var(--pa) 18%, var(--bg-2)); color:var(--pa);
+  font-family:var(--mono); font-size:.8rem; font-weight:600; letter-spacing:-.04em;
+}
+.code-open .txt{display:flex; flex-direction:column; min-width:0}
+.code-open .txt b{font-size:.95rem; font-weight:600; letter-spacing:-.01em; color:var(--fg)}
+.code-open .txt small{font-family:var(--mono); font-size:.62rem; letter-spacing:.06em; color:var(--fg-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.code-open .arr{margin-left:auto; font-family:var(--mono); color:var(--pa); transition:transform .25s}
+.code-open:hover .arr{transform:translateX(3px)}
+
+/* the viewer opens over the page */
+.cv{position:fixed; inset:0; z-index:500; display:grid; place-items:center; padding:clamp(.5rem,3vw,2.5rem); background:rgba(5,7,11,.78); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); animation:cv-fade .25s ease}
+.cv[hidden]{display:none!important}
+@keyframes cv-fade{from{opacity:0}}
+.cv .code{width:min(100%,1180px); height:min(100%,760px); display:flex; flex-direction:column; animation:cv-rise .35s cubic-bezier(.2,.7,.2,1)}
+@keyframes cv-rise{from{opacity:0; transform:translateY(14px) scale(.985)}}
+.cv .code-body{flex:1 1 auto; min-height:0}
+.cv .code-pane{min-height:0}
+.cv .code-scroll{height:auto; flex:1 1 auto; min-height:0}
+.code-x{all:unset; cursor:pointer; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; border:1px solid var(--line-2); color:var(--fg-2); transition:color .2s, border-color .2s}
+.code-x:hover{color:var(--fg); border-color:var(--pa)}
+.code-x:focus-visible{outline:2px solid var(--brand-2); outline-offset:2px}
+.code-fig{display:grid; place-items:center; padding:1.2rem; min-height:100%}
+.code-fig img{max-width:100%; height:auto; border-radius:6px}
 .code{
-  --code-h:clamp(21rem,58vh,31rem);
-  margin-top:clamp(2rem,4vw,2.8rem); border:1px solid var(--line); border-radius:calc(var(--r) + 3px);
+  border:1px solid var(--line); border-radius:calc(var(--r) + 3px);
   background:linear-gradient(180deg, var(--bg-2), color-mix(in srgb, var(--bg) 70%, var(--bg-2)));
   overflow:hidden; position:relative;
   box-shadow:0 30px 70px -40px rgba(0,0,0,.9), inset 0 1px 0 rgba(234,239,247,.04);
@@ -310,7 +344,8 @@ dl.spec{margin:0}
 .code-gh{margin-left:auto; flex:none; color:var(--fg-2); text-decoration:none; display:inline-flex; gap:.35rem; align-items:center; white-space:nowrap}
 .code-gh svg{width:11px; height:11px}
 .code-gh:hover{color:var(--pa)}
-.code-scroll{height:var(--code-h); overflow:auto; overscroll-behavior:contain; position:relative; scrollbar-width:thin; scrollbar-color:var(--bg-4) transparent}
+.code-gh[hidden]{display:none}
+.code-scroll{overflow:auto; overscroll-behavior:contain; position:relative; scrollbar-width:thin; scrollbar-color:var(--bg-4) transparent}
 .code-lines{padding:.8rem 0 1.4rem; font-family:var(--mono); font-size:.76rem; line-height:1.72; tab-size:4; -moz-tab-size:4; min-width:max-content}
 .ln{display:flex; padding-right:1.5rem; animation:ln-in .38s cubic-bezier(.2,.7,.2,1) backwards}
 .ln:hover{background:rgba(234,239,247,.035)}
@@ -330,7 +365,10 @@ dl.spec{margin:0}
 .t-c{color:#5d6a82; font-style:italic}
 
 @media (max-width:860px){
-  .code{--code-h:clamp(18rem,55vh,26rem)}
+  .cv{padding:0}
+  .cv .code{height:100%; border-radius:0; border:0}
+  .code-hd{padding:.7rem .8rem}
+  .code-note{display:none}
   .code-body{grid-template-columns:minmax(0,1fr)}
   .code-rail{border-right:0; border-bottom:1px solid var(--line)}
   .code-tabs{flex-direction:row; overflow-x:auto; scrollbar-width:none; gap:.25rem}
@@ -340,8 +378,7 @@ dl.spec{margin:0}
   .code-tab b{grid-row:auto}
   .code-tab[aria-selected="true"]::before{left:.7rem; right:.7rem; top:auto; bottom:0; width:auto; height:2px}
   .code-note{margin:0}
-  .code-acts{margin-left:0; width:100%}
-  .code-act{flex:1 1 auto; justify-content:center}
+  .code-act:not(.pri){display:none}
 }
 
 /* ── tail ────────────────────────────────────── */
@@ -761,7 +798,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       b.setAttribute("role", "tab");
       b.appendChild(el("b", null, pad(i + 1)));
       b.appendChild(el("span", "tt", f.title));
-      b.appendChild(el("span", "loc", f.path.split("/").pop() + " · L" + f.lines[0] + "–" + f.lines[1]));
+      b.appendChild(el("span", "loc", f.image ? "Diagram" : f.path.split("/").pop() + " · L" + f.lines[0] + "–" + f.lines[1]));
       b.addEventListener("click", function () { select(i); });
       btns.push(b); tabs.appendChild(b);
     });
@@ -803,6 +840,12 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     function load() {
       var i = cur, f = c.files[i];
       scroll.textContent = "";
+      if (f.image) {
+        var fig = el("div", "code-fig"), im = el("img");
+        im.src = f.image; im.alt = f.title;
+        fig.appendChild(im); scroll.appendChild(fig);
+        return;
+      }
       scroll.appendChild(el("div", "code-msg", "Fetching " + f.path.split("/").pop() + "…"));
       getFile(c, f.path).then(function (t) { if (cur === i) render(f, t); }, function () {
         if (cur !== i) return;
@@ -819,6 +862,14 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       var f = c.files[i];
       btns.forEach(function (b, k) { b.setAttribute("aria-selected", k === i ? "true" : "false"); b.tabIndex = k === i ? 0 : -1; });
       noteTx.textContent = f.note || "";
+      onGh.hidden = !!f.image;
+      if (f.image) {
+        path.textContent = "";
+        path.appendChild(el("b", null, f.title));
+        edit.href = "https://github.dev/" + c.repo + "/tree/" + c.ref;
+        if (started) load();
+        return;
+      }
       var dirs = f.path.split("/"), file = dirs.pop();
       path.textContent = "";
       var bd = document.createElement("bdi");
@@ -831,17 +882,51 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       if (started) load();
     }
 
-    /* nothing is fetched until the viewer is close to the screen */
+    /* nothing is fetched until the viewer is opened */
     function start() { if (!started) { started = true; load(); } }
     select(0);
-    if ("IntersectionObserver" in window) {
-      var io = new IntersectionObserver(function (es) {
-        if (es.some(function (e) { return e.isIntersecting; })) { io.disconnect(); start(); }
-      }, { rootMargin: "500px" });
-      io.observe(box);
+
+    var x = el("button", "code-x", "\u2715");
+    x.type = "button"; x.setAttribute("aria-label", "Close the code viewer");
+    hd.appendChild(x);
+    return { box: box, start: start, close: x, focus: function () { btns[cur].focus(); } };
+  }
+
+  /* One button on the sheet; the viewer is built the first time it's asked for. */
+  function codeButton(c, accent) {
+    var excerpts = c.files.filter(function (f) { return !f.image; }).length;
+    var b = el("button", "code-open"); b.type = "button";
+    b.setAttribute("aria-haspopup", "dialog");
+    b.appendChild(el("span", "ico", "</>"));
+    var t = el("span", "txt");
+    t.appendChild(el("b", null, "Read the code"));
+    t.appendChild(el("small", null, (c.files.length > excerpts ? "Architecture + " : "") + excerpts + " excerpts · " + c.repo));
+    b.appendChild(t);
+    b.appendChild(el("span", "arr", "\u2192"));
+
+    var ov = null, v = null;
+    function shut() {
+      ov.hidden = true; document.body.style.overflow = "";
+      document.removeEventListener("keydown", key); b.focus();
     }
-    setTimeout(start, 3000);
-    return box;
+    function key(e) { if (e.key === "Escape") shut(); }
+    b.addEventListener("click", function () {
+      if (!ov) {
+        ov = el("div", "cv");
+        ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+        ov.setAttribute("aria-label", "Source code, " + c.repo);
+        ov.style.setProperty("--pa", "var(" + accent + ")");
+        v = codeView(c);
+        ov.appendChild(v.box);
+        ov.addEventListener("click", function (e) { if (e.target === ov) shut(); });
+        v.close.addEventListener("click", shut);
+        document.body.appendChild(ov);
+      }
+      ov.hidden = false; document.body.style.overflow = "hidden";
+      document.addEventListener("keydown", key);
+      v.start(); v.focus();
+    });
+    return b;
   }
 
   /* ── sheets ── */
@@ -918,6 +1003,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     }
 
     var lk = el("div", "sh-links");
+    if (p.code) lk.appendChild(codeButton(p.code, accent));
     (p.links || []).forEach(function (l) { var a = el("a", "plink", l.label); a.href = l.href; a.rel = "noopener"; lk.appendChild(a); });
 
     if (ps) {
@@ -932,7 +1018,6 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       else body.className = "sh-body no-media";
     }
     s.appendChild(body);
-    if (p.code) s.appendChild(codeView(p.code));
 
     sheets.appendChild(s);
   });
