@@ -934,7 +934,9 @@ window.__mount3D = function (host, url, opts) {
       scene.add(root);
 
       // frame the whole assembly from its bounding sphere
-      const sphere = new THREE.Box3().setFromObject(root).getBoundingSphere(new THREE.Sphere());
+      // precise: the quick box unions each rotated part's local box, which made
+      // Rico 1.0 m tall instead of 0.62 m and framed it far too loosely
+      const sphere = new THREE.Box3().setFromObject(root, true).getBoundingSphere(new THREE.Sphere());
       const dist = sphere.radius / Math.sin((camera.fov * Math.PI) / 360);
       controls.target.copy(sphere.center);
       // 1.05 rather than 1.15: framing is bounding-sphere based, so the model
@@ -950,9 +952,9 @@ window.__mount3D = function (host, url, opts) {
       // bounding sphere is known rather than guessed at a world size
       if (gtao) {
         gtao.updateGtaoMaterial({
-          radius: Math.max(sphere.radius * 0.135, 0.02),
+          radius: Math.max(sphere.radius * 0.16, 0.02),
           distanceExponent: 1,
-          thickness: Math.max(sphere.radius * 0.135, 0.02),
+          thickness: Math.max(sphere.radius * 0.16, 0.02),
           // matched by eye to the Ramtech-Web display render of the same robot
           scale: 1.6,
           samples: 16
