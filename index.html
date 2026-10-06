@@ -414,7 +414,44 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 .hz{animation:rise .75s cubic-bezier(.2,.7,.2,1) backwards}
 
 /* ── lightbox ────────────────────────────────── */
-.lb{position:fixed; inset:0; z-index:500; display:grid; grid-template-rows:auto 1fr auto; background:rgba(5,7,11,.97); backdrop-filter:blur(8px); padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.lb{position:fixed; inset:0; z-index:500; display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto minmax(0,1fr) auto; background:rgba(5,7,11,.97); backdrop-filter:blur(8px); padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.lb-bar{grid-column:1 / -1}
+.lb-stage{grid-column:1; grid-row:2}
+.lb-cap{grid-column:1; grid-row:3}
+.lb.solo .lb-side{display:none}
+/* playlist */
+.lb-side{grid-column:2; grid-row:2 / 4; width:clamp(270px,24vw,340px); border-left:1px solid rgba(255,255,255,.1); display:flex; flex-direction:column; min-height:0}
+.lb-side-hd{display:flex; align-items:baseline; gap:.6rem; padding:1rem 1.1rem .7rem}
+.lb-side-hd .lbl{color:var(--fg-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.lb-side-n{margin-left:auto; font-family:var(--mono); font-size:.62rem; color:var(--fg-3)}
+.lb-list{list-style:none; margin:0; padding:0 .6rem 1rem; overflow-y:auto; display:flex; flex-direction:column; gap:.35rem; scrollbar-width:thin; scrollbar-color:var(--bg-4) transparent}
+.lb-item{
+  all:unset; box-sizing:border-box; cursor:pointer; width:100%; display:grid; grid-template-columns:7.2rem minmax(0,1fr); gap:.75rem; align-items:center;
+  padding:.45rem; border-radius:8px; border:1px solid transparent; transition:background-color .2s, border-color .2s;
+}
+.lb-item:hover{background:rgba(255,255,255,.04)}
+.lb-item:focus-visible{outline:2px solid var(--brand-2); outline-offset:-2px}
+.lb-item[aria-current="true"]{background:color-mix(in srgb, var(--pa) 12%, transparent); border-color:color-mix(in srgb, var(--pa) 45%, transparent)}
+.lb-th{position:relative; aspect-ratio:16/9; border-radius:5px; overflow:hidden; background:var(--bg-3) center/cover no-repeat; border:1px solid rgba(255,255,255,.08)}
+.lb-th.contain{background-size:contain; background-color:var(--bg-3)}
+.lb-th.vid::after{content:""; position:absolute; left:50%; top:50%; transform:translate(-40%,-50%); border-style:solid; border-width:7px 0 7px 11px; border-color:transparent transparent transparent #fff; filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
+.lb-th.mdl{display:grid; place-items:center; font-family:var(--mono); font-size:.62rem; font-weight:600; letter-spacing:.12em; color:#fff}
+.lb-th.mdl span{background:rgba(8,11,17,.7); padding:.15rem .4rem; border-radius:4px}
+.lb-it{display:flex; flex-direction:column; gap:.2rem; min-width:0}
+.lb-it .k{font-family:var(--mono); font-size:.58rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--pa)}
+.lb-it .c{font-size:.8rem; line-height:1.35; color:var(--fg-2); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.lb-item[aria-current="true"] .c{color:var(--fg)}
+.lb-it .st{font-family:var(--mono); font-size:.56rem; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-3)}
+.lb-item[aria-current="true"] .st{color:var(--pa)}
+@media (max-width:820px){
+  .lb{grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr) auto auto}
+  .lb-side{grid-column:1; grid-row:4; width:auto; border-left:0; border-top:1px solid rgba(255,255,255,.1)}
+  .lb-side-hd{padding:.7rem var(--gut) .4rem}
+  .lb-list{flex-direction:row; overflow-x:auto; overflow-y:hidden; padding:0 var(--gut) .9rem}
+  .lb-list li{flex:none; width:12.5rem}
+  .lb-item{grid-template-columns:1fr}
+  .lb-it .c{-webkit-line-clamp:1}
+}
 .lb[hidden]{display:none!important}
 .lb-bar{display:flex; gap:1rem; align-items:center; padding:.95rem var(--gut); border-bottom:1px solid rgba(255,255,255,.1)}
 .lb-fig{font-family:var(--mono); font-size:.68rem; font-weight:600; letter-spacing:.14em; color:var(--pa)}
@@ -442,14 +479,6 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   .plates{grid-template-columns:1fr}
   .chip{margin-left:0}
   .cap > div{grid-template-columns:1fr; gap:.25rem}
-}
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation:none!important; transition:none!important}
-  html{scroll-behavior:auto}
-  .js [data-rev]{opacity:1!important; transform:none!important}
-  /* no scroll, so wrap one copy and drop the loop duplicate */
-  .track{width:auto; flex-wrap:wrap; gap:1.4rem}
-  .track .dup{display:none}
 }
 </style>
 </head>
@@ -521,6 +550,10 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     <button class="lb-btn lb-nav lb-next" id="lb-next" type="button" aria-label="Next">&#8250;</button>
   </div>
   <p class="lb-cap" id="lb-cap"></p>
+  <aside class="lb-side" id="lb-side" aria-label="Project media">
+    <div class="lb-side-hd"><span class="lbl" id="lb-side-t"></span><span class="lb-side-n" id="lb-side-n"></span></div>
+    <ol class="lb-list" id="lb-list"></ol>
+  </aside>
 </div>
 
 <script src="projects.js"></script>
@@ -572,7 +605,9 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   var w = el("a", "btn", "See the work"); w.href = "#work"; cta.appendChild(w);
 
   /* ── media ── */
-  var ALL = [], figNo = 0;
+  /* every project keeps its own media list; the viewer plays through it */
+  var MEDIA = {}, CLIPS = {}, TITLES = {}, figNo = 0;
+  function reg(slug, entry) { (MEDIA[slug] = MEDIA[slug] || []).push(entry); return entry; }
   function src(slug, f) { return "media/" + slug + "/" + f; }
 
   function thumb(slug, m) {
@@ -638,8 +673,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 
     if (m && m.type === "model") {
       fig.className = (fig.className ? fig.className + " " : "") + "plate-model";
-      var idxM = ALL.length;
-      ALL.push({ slug: slug, m: m, no: no, accent: accent || "--brand" });
+      var entM = reg(slug, { slug: slug, m: m, no: no, accent: accent || "--brand" });
 
       var host = el("div", "frame model");
       host.setAttribute("data-model", src(slug, m.file));
@@ -658,7 +692,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       var exp = el("button", "model-exp", "Expand");
       exp.type = "button";
       exp.setAttribute("aria-label", "Open the 3D model full screen");
-      exp.addEventListener("click", function () { open(idxM); });
+      exp.addEventListener("click", function () { openIn(slug, entM); });
       host.appendChild(exp);
 
       fig.appendChild(host);
@@ -671,13 +705,12 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       return fig;
     }
 
-    var idx = ALL.length;
-      ALL.push({ slug: slug, m: m, no: no, accent: accent || "--brand" });
+    var ent = reg(slug, { slug: slug, m: m, no: no, accent: accent || "--brand" });
     var b = el("button", "frame"); b.type = "button";
     b.setAttribute("aria-label", "Enlarge figure " + pad(no));
     b.appendChild(thumb(slug, m));
     if (m.type === "video" || m.type === "youtube") { var pl = el("div", "play"); pl.appendChild(el("i")); b.appendChild(pl); }
-    b.addEventListener("click", function () { open(idx); });
+    b.addEventListener("click", function () { openIn(slug, ent); });
     fig.appendChild(b);
     cap.appendChild(el("span", "fig", "FIG " + pad(no)));
     cap.appendChild(el("span", null, m.caption || ""));
@@ -901,7 +934,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 
   /* Footage gets its own card, opening the media viewer on just these videos. */
   function actionButton(p, accent) {
-    var items = p.action.map(function (m) {
+    CLIPS[p.slug] = p.action.map(function (m) {
       return { slug: p.slug, m: m, accent: accent, label: m.label || "VIDEO" };
     });
     var b = el("button", "code-open"); b.type = "button";
@@ -914,7 +947,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     t.appendChild(el("small", null, p.action.map(function (m) { return m.label ? m.label.charAt(0) + m.label.slice(1).toLowerCase() : "Video"; }).join(" + ")));
     b.appendChild(t);
     b.appendChild(el("span", "arr", "\u2192"));
-    b.addEventListener("click", function () { open(0, items); });
+    b.addEventListener("click", function () { openIn(p.slug, CLIPS[p.slug][0]); });
     return b;
   }
 
@@ -962,6 +995,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   sheets.appendChild(first);
 
   PROJECTS.forEach(function (p, i) {
+    TITLES[p.slug] = p.title;
     var s = el("section", "sheet");
     var accent = ACCENTS[i % ACCENTS.length];
     s.style.setProperty("--pa", "var(" + accent + ")");
@@ -1030,7 +1064,15 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 
     var lk = el("div", "sh-links");
     if (p.action && p.action.length) lk.appendChild(actionButton(p, accent));
-    if (p.code) lk.appendChild(codeButton(p.code, accent));
+    if (p.code) {
+      lk.appendChild(codeButton(p.code, accent));
+      /* diagrams in the code viewer belong in the media list too */
+      p.code.files.forEach(function (f) {
+        if (!f.image) return;
+        reg(p.slug, { slug: p.slug, accent: accent, label: "DIAGRAM",
+          m: { type: "image", url: f.image, caption: f.note || f.title } });
+      });
+    }
     (p.links || []).forEach(function (l) { var a = el("a", "plink", l.label); a.href = l.href; a.rel = "noopener"; lk.appendChild(a); });
 
     if (ps) {
@@ -1094,7 +1136,75 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   var lb = document.getElementById("lb"), stage = document.getElementById("lb-stage");
   var capN = document.getElementById("lb-cap"), figN = document.getElementById("lb-fig"), ctN = document.getElementById("lb-ct");
   var prev = document.getElementById("lb-prev"), next = document.getElementById("lb-next"), x = document.getElementById("lb-x");
-  var at = 0, list = ALL, back = null, node = null, lbViewer = null, mountToken = 0;
+  var at = 0, list = [], back = null, node = null, lbViewer = null, mountToken = 0;
+  var side = document.getElementById("lb-side"), sideList = document.getElementById("lb-list");
+  var rows = [];
+
+  function urlOf(f) { return f.m.url || src(f.slug, f.m.file); }
+  function kindOf(f) {
+    var m = f.m;
+    if (f.label) return f.label;
+    return m.type === "model" ? "3D MODEL" : m.type === "image" ? "FIG " + pad(f.no) : "VIDEO";
+  }
+  function isVid(f) { return f.m.type === "youtube" || f.m.type === "video"; }
+  function nextVid(from) {
+    for (var j = from + 1; j < list.length; j++) if (isVid(list[j])) return j;
+    return -1;
+  }
+
+  /* the playlist down the side: clips first, then the project's other media */
+  function buildSide(slug) {
+    sideList.textContent = ""; rows = [];
+    document.getElementById("lb-side-t").textContent = TITLES[slug] || "";
+    document.getElementById("lb-side-n").textContent = list.length + (list.length === 1 ? " item" : " items");
+    list.forEach(function (f, i) {
+      var li = document.createElement("li"), b = el("button", "lb-item"); b.type = "button";
+      var th = el("span", "lb-th"), m = f.m;
+      if (m.type === "youtube") { th.style.backgroundImage = "url('https://img.youtube.com/vi/" + m.id + "/mqdefault.jpg')"; th.className += " vid"; }
+      else if (m.type === "video") { if (m.poster) th.style.backgroundImage = "url('" + src(f.slug, m.poster) + "')"; th.className += " vid"; }
+      else if (m.type === "model") { if (m.poster) th.style.backgroundImage = "url('" + src(f.slug, m.poster) + "')"; th.className += " mdl"; th.appendChild(el("span", null, "3D")); }
+      else { th.style.backgroundImage = "url('" + urlOf(f) + "')"; if (/\.svg$/i.test(urlOf(f))) th.className += " contain"; }
+      var it = el("span", "lb-it");
+      it.appendChild(el("span", "k", kindOf(f)));
+      it.appendChild(el("span", "c", m.caption || ""));
+      var st = el("span", "st", "");
+      it.appendChild(st);
+      b.appendChild(th); b.appendChild(it);
+      b.addEventListener("click", function () { at = i; show(); });
+      li.appendChild(b); sideList.appendChild(li);
+      rows.push({ b: b, st: st });
+    });
+  }
+  function markSide() {
+    var nv = isVid(list[at]) ? nextVid(at) : -1;
+    rows.forEach(function (r, i) {
+      r.b.setAttribute("aria-current", i === at ? "true" : "false");
+      r.st.textContent = i === at ? (isVid(list[i]) ? "Now playing" : "Now showing") : i === nv ? "Up next" : "";
+    });
+    var cur = rows[at];
+    if (cur) cur.b.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+
+  /* YouTube tells us when a video ends only through its player API */
+  var ytWait = null;
+  function ytApi(cb) {
+    if (window.YT && window.YT.Player) return cb();
+    if (!ytWait) {
+      ytWait = [];
+      var prevReady = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = function () {
+        if (prevReady) prevReady();
+        ytWait.forEach(function (f) { f(); }); ytWait = [];
+      };
+      var s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(s);
+    }
+    ytWait.push(cb);
+  }
+  function ended(token) {
+    if (token !== mountToken || lb.hidden) return;
+    var j = nextVid(at);
+    if (j >= 0) { at = j; show(); }
+  }
 
   function clear() {
     mountToken += 1;                 /* invalidates any mount still in flight */
@@ -1105,7 +1215,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   }
   function show() {
     clear();
-    var f = list[at], m = f.m, n, mountUrl = null, mountOpts = null;
+    var f = list[at], m = f.m, n, mountUrl = null, mountOpts = null, token = mountToken;
     lb.style.setProperty("--pa", "var(" + f.accent + ")");
     if (m.type === "model") {
       n = document.createElement("div");
@@ -1114,7 +1224,8 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       mountOpts = optsOf(m);
     } else if (m.type === "youtube") {
       n = document.createElement("iframe");
-      n.src = "https://www.youtube-nocookie.com/embed/" + m.id + "?autoplay=1&rel=0";
+      n.src = "https://www.youtube-nocookie.com/embed/" + m.id + "?autoplay=1&rel=0&playsinline=1&enablejsapi=1&origin=" + encodeURIComponent(location.origin);
+      n.id = "lb-yt-" + token;
       n.allow = "autoplay; encrypted-media; picture-in-picture";
       n.setAttribute("allowfullscreen", ""); n.title = m.caption || "Video";
       if (m.vertical) n.className = "vert";
@@ -1122,10 +1233,16 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       n = document.createElement("video"); n.src = src(f.slug, m.file);
       n.controls = true; n.autoplay = true; n.playsInline = true;
       if (m.poster) n.poster = src(f.slug, m.poster);
-    } else { n = document.createElement("img"); n.src = src(f.slug, m.file); n.alt = m.caption || ""; }
+      n.addEventListener("ended", function () { ended(token); });
+    } else { n = document.createElement("img"); n.src = urlOf(f); n.alt = m.caption || ""; }
     node = n; stage.appendChild(n);
+    if (m.type === "youtube") {
+      ytApi(function () {
+        if (token !== mountToken) return;
+        new YT.Player(n, { events: { onStateChange: function (e) { if (e.data === 0) ended(token); } } });
+      });
+    }
     if (mountUrl) {
-      var token = mountToken;
       mount3D(n, mountUrl, mountOpts, function (h) {
         /* closed or stepped away while three.js was still loading */
         if (token !== mountToken) { if (h && h.dispose) { h.dispose(); } return; }
@@ -1133,12 +1250,18 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
       });
     }
     capN.textContent = m.caption || "";
-    figN.textContent = f.label || "FIG " + pad(f.no);
+    figN.textContent = kindOf(f);
     ctN.textContent = (at + 1) + " of " + list.length;
     prev.hidden = next.hidden = list.length < 2;
+    markSide();
   }
-  function open(i, items) {
-    at = i; list = items || ALL; back = document.activeElement;
+  /* open the viewer on one project's media, starting at `entry` */
+  function openIn(slug, entry) {
+    list = (CLIPS[slug] || []).concat(MEDIA[slug] || []);
+    at = Math.max(0, list.indexOf(entry));
+    back = document.activeElement;
+    lb.classList.toggle("solo", list.length < 2);
+    buildSide(slug);
     lb.hidden = false; document.body.style.overflow = "hidden"; show(); x.focus();
   }
   function close() { clear(); lb.hidden = true; document.body.style.overflow = ""; if (back && back.focus) back.focus(); }
@@ -1154,7 +1277,8 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     else if (e.key === "ArrowLeft") step(-1);
     else if (e.key === "ArrowRight") step(1);
     else if (e.key === "Tab") {
-      var f = [x, prev, next].filter(function (b) { return !b.hidden; });
+      var f = [x, prev, next].filter(function (b) { return !b.hidden; })
+        .concat(lb.classList.contains("solo") ? [] : rows.map(function (r) { return r.b; }));
       var i = f.indexOf(document.activeElement); e.preventDefault();
       f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
     }
@@ -1265,10 +1389,7 @@ window.__mount3D = function (host, url, opts) {
   const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 1000);
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
-  // The idle orbit is the point of the plate, so it runs even with reduced
-  // motion on, just slower; taking hold of the model stops it for good.
-  const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  controls.autoRotateSpeed = calm ? 0.8 : 1.6;
+  controls.autoRotateSpeed = 1.6;
   const spin = opts.spin !== false;
   // the spin waits for the model, so it never starts on an empty frame
   controls.autoRotate = false;
@@ -1282,7 +1403,7 @@ window.__mount3D = function (host, url, opts) {
   restore.setAttribute("aria-label", "Restore the starting view");
   restore.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 6.6A3.9 3.9 0 1 0 3.3 3.2"/><path d="M2.4 1.6v2.1h2.1"/></svg>Restore';
   host.appendChild(restore);
-  let home = null, tween = null, fitAt = null;
+  let home = null, tween = null;
   controls.addEventListener("start", () => {
     tween = null;
     controls.autoRotate = false;
@@ -1380,10 +1501,9 @@ window.__mount3D = function (host, url, opts) {
 
       // Fit the model's actual shape, not its bounding sphere or box: both are
       // padded with empty corners the robot never fills, which left it small in
-      // a big empty plate. The fit is worked out for every angle of the spin,
-      // and the idle orbit follows it — easing in when the robot is narrow to
-      // the camera and out when it turns a corner — so it fills the frame the
-      // whole way round instead of being sized for its widest angle.
+      // a big empty plate. The distance is fixed for the whole orbit: it frames
+      // the opening shot with room for the corner labels, or just fits the
+      // robot's widest angle, whichever is further.
       const pts = [], v = new THREE.Vector3();
       root.traverse((o) => {
         const pos = o.isMesh && o.geometry && o.geometry.attributes.position;
@@ -1421,15 +1541,10 @@ window.__mount3D = function (host, url, opts) {
         center.y += dy;
         for (const p of pts) p.y -= dy;
       }
-      const fits = [];
-      for (let k = 0; k < STEPS; k++) fits.push(fitFor((k / STEPS) * Math.PI * 2) * FIT_MARGIN);
-      // distance that fits the robot when the camera sits at azimuth `az`
-      fitAt = (az) => {
-        const f = ((az / (Math.PI * 2)) % 1 + 1) % 1 * STEPS, i = Math.floor(f), t = f - i;
-        return fits[i % STEPS] * (1 - t) + fits[(i + 1) % STEPS] * t;
-      };
-      const dist = fitAt(az0);
-      const far = Math.max(...fits);
+      let widest = 0;
+      for (let k = 0; k < STEPS; k++) widest = Math.max(widest, fitFor((k / STEPS) * Math.PI * 2));
+      const dist = Math.max(fitFor(az0) * FIT_MARGIN, widest * 1.02);
+      const far = dist;
       controls.target.copy(center);
       camera.position.copy(center).add(dir.clone().multiplyScalar(dist));
       camera.near = Math.max(dist / 1000, 1e-4);
@@ -1459,12 +1574,6 @@ window.__mount3D = function (host, url, opts) {
           camera.position.lerpVectors(tween.pos, home.pos, e);
           controls.target.lerpVectors(tween.tgt, home.tgt, e);
           if (t === 1) { tween = null; controls.autoRotate = spin; }
-        } else if (controls.autoRotate && fitAt) {
-          // ride the fit while idling; it changes slowly, so a gentle follow
-          // reads as framing rather than zooming
-          const off = camera.position.clone().sub(controls.target);
-          const want = fitAt(Math.atan2(off.x, off.z)), len = off.length();
-          camera.position.copy(controls.target).add(off.setLength(len + (want - len) * 0.06));
         }
         controls.update(); composer.render(); raf = requestAnimationFrame(tick);
       };
