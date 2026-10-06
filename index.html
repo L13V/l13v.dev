@@ -780,13 +780,11 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 <script type="module">
 /* Live CAD viewer.
  *
- * Lighting is carried over verbatim from the Ramtech-Web CAD viewer, where the
- * exposure was calibrated against SolidWorks' own renders rather than chosen by
- * eye. Don't nudge these by feel:
- *
- *   exposure 0.45 over a RoomEnvironment studio IBL with neutral tone mapping
- *   base colours scaled 0.82 on load, because powder-coated parts export as
- *   pure 1.0 white and otherwise clip to one indistinguishable blob
+ * Lighting follows the Ramtech-Web CAD viewer: a RoomEnvironment studio IBL with
+ * neutral tone mapping, and base colours scaled 0.82 on load because
+ * powder-coated parts export as pure 1.0 white and otherwise clip to one blob.
+ * Ramtech-Web calibrates exposure at 0.45 against SolidWorks on a single part;
+ * a whole assembly with AO reads darker, so this page runs a little brighter.
  */
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -799,9 +797,36 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
 
-const VIEWER_EXPOSURE = 0.45;
+const VIEWER_EXPOSURE = 0.5;
 const BASE_COLOR_SCALE = 0.82;
 const CLEAR_TRANSPARENCY = 0.8;   // SolidWorks transparency for clear polycarbonate
+const MATTE_ROUGHNESS = 0.8;      // what Ramtech-Web's converter writes for every part
+const METAL_MIN_ROUGHNESS = 0.3;  // mirror-polished metals only flash at one angle; this keeps a visible sheen
+
+// glTF-Transform palette textures store each part's roughness (G) and
+// metalness (B) as texels. Authored metals (gold, steel) keep their finish;
+// every non-metal texel is made converter-matte.
+const mrCache = new Map();
+function matteNonMetals(tex) {
+  if (mrCache.has(tex)) return mrCache.get(tex);
+  const im = tex.image, c = document.createElement("canvas");
+  c.width = im.width; c.height = im.height;
+  const x = c.getContext("2d");
+  x.drawImage(im, 0, 0);
+  const d = x.getImageData(0, 0, c.width, c.height);
+  const g = Math.round(MATTE_ROUGHNESS * 255);
+  const gm = Math.round(METAL_MIN_ROUGHNESS * 255);
+  for (let i = 0; i < d.data.length; i += 4) {
+    if (d.data[i + 2] < 128) d.data[i + 1] = g;
+    else d.data[i + 1] = Math.max(d.data[i + 1], gm);
+  }
+  x.putImageData(d, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  for (const k of ["flipY", "colorSpace", "wrapS", "wrapT", "magFilter", "minFilter", "channel", "rotation", "matrixAutoUpdate"]) t[k] = tex[k];
+  t.offset.copy(tex.offset); t.repeat.copy(tex.repeat); t.center.copy(tex.center); t.matrix.copy(tex.matrix);
+  mrCache.set(tex, t);
+  return t;
+}
 const DRACO_PATH = "https://cdn.jsdelivr.net/npm/three@0.183.0/examples/jsm/libs/draco/";
 
 window.__mount3D = function (host, url, opts) {
@@ -866,8 +891,6 @@ window.__mount3D = function (host, url, opts) {
       if (disposed) return;
       root = gltf.scene;
 
-      // The Ramtech-Web treatment, applied to every model exactly as that
-      // viewer applies it: exposure 0.45 and base colours scaled 0.82.
       renderer.toneMappingExposure =
         typeof opts.exposure === "number" ? opts.exposure : VIEWER_EXPOSURE;
 
@@ -878,12 +901,18 @@ window.__mount3D = function (host, url, opts) {
           if (!mat || seen.has(mat)) continue;
           seen.add(mat);
           if (mat.color) mat.color.multiplyScalar(BASE_COLOR_SCALE);
-          // Reduce authored materials to what Ramtech-Web's converter emits
-          // (matte, non-metallic, roughness 0.8) — the 0.45 exposure was
-          // calibrated against that, and near-mirror finishes fight the IBL.
-          mat.metalness = 0;
-          mat.roughness = 0.8;
-          mat.metalnessMap = mat.roughnessMap = mat.normalMap = null;
+          // Non-metals become what Ramtech-Web's converter emits (matte,
+          // roughness 0.8); glossy authored plastics fight the IBL.
+          mat.normalMap = null;
+          if (mat.metalnessMap && mat.metalnessMap.image) {
+            mat.metalnessMap = mat.roughnessMap = matteNonMetals(mat.metalnessMap);
+            mat.metalness = 1;
+            mat.roughness = 1;
+          } else {
+            mat.metalnessMap = mat.roughnessMap = null;
+            mat.metalness = 0;
+            mat.roughness = MATTE_ROUGHNESS;
+          }
           if (mat.isMeshPhysicalMaterial) {
             // The converter writes clear parts as alpha-blended colour
             // (alpha = 1 - SolidWorks transparency), not physical transmission,
@@ -900,10 +929,8 @@ window.__mount3D = function (host, url, opts) {
           mat.needsUpdate = true;
         }
       });
-      // Conversions carry no lights; authored exports add their own on top of the studio IBL.
-      const lights = [];
-      root.traverse((o) => { if (o.isLight) lights.push(o); });
-      lights.forEach((l) => l.removeFromParent());
+      // Authored lights are kept: under the IBL alone metals have nothing to
+      // catch a highlight from, and gold reads as dull olive.
       scene.add(root);
 
       // frame the whole assembly from its bounding sphere
