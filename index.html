@@ -801,6 +801,7 @@ import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
 
 const VIEWER_EXPOSURE = 0.45;
 const BASE_COLOR_SCALE = 0.82;
+const CLEAR_TRANSPARENCY = 0.8;   // SolidWorks transparency for clear polycarbonate
 const DRACO_PATH = "https://cdn.jsdelivr.net/npm/three@0.183.0/examples/jsm/libs/draco/";
 
 window.__mount3D = function (host, url, opts) {
@@ -881,7 +882,19 @@ window.__mount3D = function (host, url, opts) {
           mat.metalness = 0;
           mat.roughness = 0.8;
           mat.metalnessMap = mat.roughnessMap = mat.normalMap = null;
-          if (mat.isMeshPhysicalMaterial) { mat.sheen = 0; mat.clearcoat = 0; mat.specularIntensity = 1; }
+          if (mat.isMeshPhysicalMaterial) {
+            // The converter writes clear parts as alpha-blended colour
+            // (alpha = 1 - SolidWorks transparency), not physical transmission,
+            // which renders frosted grey at roughness 0.8.
+            if (mat.transmission > 0) {
+              mat.opacity = 1 - CLEAR_TRANSPARENCY * mat.transmission;
+              mat.transmission = 0;
+              mat.transparent = true;
+              mat.depthWrite = false;
+              mat.side = THREE.DoubleSide;
+            }
+            mat.sheen = 0; mat.clearcoat = 0; mat.specularIntensity = 1;
+          }
           mat.needsUpdate = true;
         }
       });
