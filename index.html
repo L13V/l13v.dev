@@ -875,8 +875,20 @@ window.__mount3D = function (host, url, opts) {
           if (!mat || seen.has(mat)) continue;
           seen.add(mat);
           if (mat.color) mat.color.multiplyScalar(BASE_COLOR_SCALE);
+          // Reduce authored materials to what Ramtech-Web's converter emits
+          // (matte, non-metallic, roughness 0.8) — the 0.45 exposure was
+          // calibrated against that, and near-mirror finishes fight the IBL.
+          mat.metalness = 0;
+          mat.roughness = 0.8;
+          mat.metalnessMap = mat.roughnessMap = mat.normalMap = null;
+          if (mat.isMeshPhysicalMaterial) { mat.sheen = 0; mat.clearcoat = 0; mat.specularIntensity = 1; }
+          mat.needsUpdate = true;
         }
       });
+      // Conversions carry no lights; authored exports add their own on top of the studio IBL.
+      const lights = [];
+      root.traverse((o) => { if (o.isLight) lights.push(o); });
+      lights.forEach((l) => l.removeFromParent());
       scene.add(root);
 
       // frame the whole assembly from its bounding sphere
