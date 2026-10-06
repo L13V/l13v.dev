@@ -33,6 +33,7 @@ const yt = (id, caption) => ({ type: "youtube", id, caption });
      poster    still image shown while it loads, e.g. "robot-poster.png"
      exposure  overrides the calibrated 0.45. Lower is darker.
      env       how much the studio light fills it in, 0–1. Default 1.
+     ao        false turns off the screen-space contact shadows.
    Keep .glb files under ~6 MB — see media/README.md. */
 const mdl = (file, caption, opts) =>
   Object.assign({ type: "model", file, caption }, opts || {});

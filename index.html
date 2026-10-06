@@ -458,7 +458,7 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
     var o = {};
     if (typeof m.exposure === "number") o.exposure = m.exposure;
     if (typeof m.env === "number") o.env = m.env;
-    if (m.ao) o.ao = true;
+    if (m.ao === false) o.ao = false;
     return o;
   }
 
@@ -839,7 +839,9 @@ window.__mount3D = function (host, url, opts) {
   // selected.)
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  const gtao = opts.ao ? new GTAOPass(scene, camera, 1, 1) : null;
+  // Screen-space AO on top of the baked per-vertex AO: the baked term can only
+  // shade at vertices, so large flat faces get none without this.
+  const gtao = opts.ao !== false ? new GTAOPass(scene, camera, 1, 1) : null;
   if (gtao) composer.addPass(gtao);
   composer.addPass(new OutputPass());
 
@@ -921,10 +923,11 @@ window.__mount3D = function (host, url, opts) {
       // bounding sphere is known rather than guessed at a world size
       if (gtao) {
         gtao.updateGtaoMaterial({
-          radius: Math.max(sphere.radius * 0.12, 0.02),
+          radius: Math.max(sphere.radius * 0.135, 0.02),
           distanceExponent: 1,
-          thickness: sphere.radius * 0.1,
-          scale: 1,
+          thickness: Math.max(sphere.radius * 0.135, 0.02),
+          // matched by eye to the Ramtech-Web display render of the same robot
+          scale: 1.6,
           samples: 16
         });
       }
