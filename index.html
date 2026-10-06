@@ -1279,7 +1279,7 @@ window.__mount3D = function (host, url, opts) {
   restore.setAttribute("aria-label", "Restore the starting view");
   restore.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 6.6A3.9 3.9 0 1 0 3.3 3.2"/><path d="M2.4 1.6v2.1h2.1"/></svg>Restore';
   host.appendChild(restore);
-  let home = null, tween = null;
+  let home = null, tween = null, fitAt = null;
   controls.addEventListener("start", () => {
     tween = null;
     controls.autoRotate = false;
@@ -1377,8 +1377,10 @@ window.__mount3D = function (host, url, opts) {
 
       // Fit the model's actual shape, not its bounding sphere or box: both are
       // padded with empty corners the robot never fills, which left it small in
-      // a big empty plate. A sample of real vertices is tested from every angle
-      // of the spin, so whichever side faces the camera it still fits.
+      // a big empty plate. The fit is worked out for every angle of the spin,
+      // and the idle orbit follows it — easing in when the robot is narrow to
+      // the camera and out when it turns a corner — so it fills the frame the
+      // whole way round instead of being sized for its widest angle.
       const pts = [], v = new THREE.Vector3();
       root.traverse((o) => {
         const pos = o.isMesh && o.geometry && o.geometry.attributes.position;
@@ -1391,22 +1393,44 @@ window.__mount3D = function (host, url, opts) {
       const up = new THREE.Vector3(0, 1, 0);
       const elev = Math.asin(dir.y), az0 = Math.atan2(dir.x, dir.z);
       const tanV = Math.tan((camera.fov * Math.PI) / 360), tanH = tanV * camera.aspect;
-      let dist = 0;
-      for (let k = 0; k < 36; k++) {
-        const az = az0 + (k / 36) * Math.PI * 2;
+      const FIT_MARGIN = 1.12, STEPS = 72;   // room for the corner labels
+      const basis = (az) => {
         const d = new THREE.Vector3(Math.cos(elev) * Math.sin(az), Math.sin(elev), Math.cos(elev) * Math.cos(az));
         const r = new THREE.Vector3().crossVectors(up, d).normalize();
-        const u = new THREE.Vector3().crossVectors(d, r);
+        return { d, r, u: new THREE.Vector3().crossVectors(d, r) };
+      };
+      const fitFor = (az) => {
+        const { d, r, u } = basis(az);
+        let need = 0;
         for (const p of pts) {
           const z = p.dot(d);
-          dist = Math.max(dist, Math.abs(p.dot(r)) / tanH + z, Math.abs(p.dot(u)) / tanV + z);
+          need = Math.max(need, Math.abs(p.dot(r)) / tanH + z, Math.abs(p.dot(u)) / tanV + z);
         }
+        return need || sphere.radius * 2;
+      };
+      // Seen from above, a robot's silhouette sits low around its box centre.
+      // Lift the orbit's pivot so the opening shot is centred top to bottom.
+      {
+        const D = fitFor(az0), { d, u } = basis(az0);
+        let lo = Infinity, hi = -Infinity;
+        for (const p of pts) { const y = p.dot(u) / (D - p.dot(d)); lo = Math.min(lo, y); hi = Math.max(hi, y); }
+        const dy = ((lo + hi) / 2) * D / Math.cos(elev);
+        center.y += dy;
+        for (const p of pts) p.y -= dy;
       }
-      dist = (dist || sphere.radius * 2) * 1.05;
+      const fits = [];
+      for (let k = 0; k < STEPS; k++) fits.push(fitFor((k / STEPS) * Math.PI * 2) * FIT_MARGIN);
+      // distance that fits the robot when the camera sits at azimuth `az`
+      fitAt = (az) => {
+        const f = ((az / (Math.PI * 2)) % 1 + 1) % 1 * STEPS, i = Math.floor(f), t = f - i;
+        return fits[i % STEPS] * (1 - t) + fits[(i + 1) % STEPS] * t;
+      };
+      const dist = fitAt(az0);
+      const far = Math.max(...fits);
       controls.target.copy(center);
       camera.position.copy(center).add(dir.clone().multiplyScalar(dist));
       camera.near = Math.max(dist / 1000, 1e-4);
-      camera.far = dist * 12;
+      camera.far = far * 12;
       camera.updateProjectionMatrix();
       controls.update();
       home = { pos: camera.position.clone(), tgt: center.clone() };
@@ -1432,6 +1456,12 @@ window.__mount3D = function (host, url, opts) {
           camera.position.lerpVectors(tween.pos, home.pos, e);
           controls.target.lerpVectors(tween.tgt, home.tgt, e);
           if (t === 1) { tween = null; controls.autoRotate = spin; }
+        } else if (controls.autoRotate && fitAt) {
+          // ride the fit while idling; it changes slowly, so a gentle follow
+          // reads as framing rather than zooming
+          const off = camera.position.clone().sub(controls.target);
+          const want = fitAt(Math.atan2(off.x, off.z)), len = off.length();
+          camera.position.copy(controls.target).add(off.setLength(len + (want - len) * 0.06));
         }
         controls.update(); composer.render(); raf = requestAnimationFrame(tick);
       };
