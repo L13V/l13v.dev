@@ -71,17 +71,21 @@ nothing moves on until you scroll.**
   frames, while a flick — a fast burst — glides to the next resting point
   after where that gesture began (each section, each research chapter, each
   results panel, each card) and absorbs the rest of its momentum, so you can't
-  fly past a scene. Keep spinning and it steps on point by point. Keyboard and
-  scrollbar stay native. On touch screens the browser's own scroll snapping
+  fly past a scene. Keep spinning and it steps on point by point. Keyboard
+  scrolling stays native. On touch screens the browser's own scroll snapping
   (`proximity`, `scroll-snap-stop: always`) uses the same points. Points are
   registered with `Snap.add(...)` in `site.js`.
+- **Rail and scrollbar** — a dot per project runs down the left edge the
+  whole way (hover for names, click to glide there; hidden under 760 px). The
+  browser's scrollbar is hidden and replaced by a slim thumb that takes the
+  current project's accent; drag it, or click the track to glide.
 - **Hero** — the name rises in, then scatters letter by letter as you scroll
   away, over a dot field that radio pulses ripple across (click to send one).
 - **Statement** — rises in underneath the scattering name and lights up in
   about a second, faster while you scroll; it starts over if you go back up.
-- **01 · Rico** (`stage: "model"`) — turns on its own like a turntable while
-  the `highlights` take turns; scrolling spins it faster (backwards if you
-  scroll up). A drag nudges it; **Explore in 3D** opens the free-orbit viewer.
+- **01 · Rico** (`stage: "model"`) — rotates in sync with the scroll through
+  a full 360° while the `highlights` follow along; dragging nudges the orbit
+  and stays where you leave it. **Explore in 3D** opens the free-orbit viewer.
 - **02 · UWB** (`stage: "research"`) — a six-chapter 3D story: the node, the
   bench scanned in, pulses to the anchors, range spheres, the least-squares
   solver stepping in (the real Levenberg–Marquardt iterates), then a concrete

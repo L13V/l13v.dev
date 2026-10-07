@@ -206,22 +206,31 @@ window.__mount3D = function (host, url, opts) {
     });
   }
 
-  // Scrubbed: a drag nudges the robot round, and it springs back to where the
-  // scroll put it once you let go.
-  const nudge = { v: 0, held: false, x: 0, base: 0 };
+  // Scrubbed: a drag turns the robot on top of where the scroll has it, and
+  // when you let go it coasts to a stop and stays there — no spring back.
+  const nudge = { v: 0, held: false, x: 0, base: 0, w: 0, t: 0 };
   const offHost = [];
   const listen = (t, type, fn, o) => { t.addEventListener(type, fn, o); offHost.push(() => t.removeEventListener(type, fn, o)); };
   if (scrub) {
     listen(canvas, "pointerdown", (e) => {
-      nudge.held = true; nudge.x = e.clientX; nudge.base = nudge.v;
+      nudge.held = true; nudge.x = e.clientX; nudge.base = nudge.v; nudge.w = 0; nudge.t = performance.now();
       canvas.setPointerCapture(e.pointerId); host.classList.add("held");
     });
     listen(canvas, "pointermove", (e) => {
       if (!nudge.held) return;
-      nudge.v = nudge.base + (e.clientX - nudge.x) / Math.max(host.clientWidth, 1) * Math.PI * 1.4;
+      const now = performance.now(), v = nudge.base + (e.clientX - nudge.x) / Math.max(host.clientWidth, 1) * Math.PI * 1.4;
+      // the drag's own speed, smoothed, so letting go can carry it on
+      nudge.w = lerp(nudge.w, (v - nudge.v) / Math.max(0.008, (now - nudge.t) / 1000), 0.35);
+      nudge.v = v; nudge.t = now;
       markDirty();
     });
-    const up = () => { nudge.held = false; host.classList.remove("held"); };
+    const up = () => {
+      if (!nudge.held) return;
+      nudge.held = false; host.classList.remove("held");
+      if (performance.now() - nudge.t > 90) nudge.w = 0;   // held still before letting go
+      nudge.w = Math.max(-5, Math.min(5, nudge.w));
+      start();
+    };
     listen(canvas, "pointerup", up);
     listen(canvas, "pointercancel", up);
   }
@@ -264,13 +273,16 @@ window.__mount3D = function (host, url, opts) {
     camera.lookAt(fit.center);
   }
 
+  let lastTick = 0;
   function tick(now) {
     raf = 0;
-    if (disposed || !visible) return;
+    const dt = lastTick ? Math.min(0.05, (now - lastTick) / 1000) : 0.016;
+    lastTick = now;
+    if (disposed || !visible) { lastTick = 0; return; }
     let moving = false;
     if (scrub) {
-      if (!nudge.held && Math.abs(nudge.v) > 1e-4) { nudge.v *= 0.9; moving = true; }
-      else if (!nudge.held) nudge.v = 0;
+      if (!nudge.held && Math.abs(nudge.w) > 0.01) { nudge.v += nudge.w * dt; nudge.w *= Math.exp(-dt * 2.2); moving = true; }
+      else if (!nudge.held) nudge.w = 0;
       if (dirty || moving) { placeScrubbed(); composer.render(); dirty = false; }
     } else {
       if (tween) {

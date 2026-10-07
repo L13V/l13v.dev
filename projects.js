@@ -82,6 +82,7 @@ const PROJECTS = [
     stage: "model",
     accent: "#ffc21a",
     logo: "rico-logo.webp",     /* optional, from media/<slug>/ — leads the heading */
+    outline: "rico-outline.webp", /* optional, from media/<slug>/ — a white-on-transparent outline of the logo; slides behind the model in place of the name */
     summary:
       "Swerve drive and a turreted shooter that keeps firing while the robot " +
       "moves. Written against AdvantageKit's IO pattern, so every subsystem has " +
@@ -174,7 +175,8 @@ const PROJECTS = [
     stage: "research",
     accent: "#5cd0b3",
     /* The opening of the research section. */
-    kicker: "University of Florida · SSTP research",
+    kicker: "SSTP research",
+    lab: { name: "AIRIS Lab", org: "University of Florida", logo: "uf-logo.webp" },   /* logo from media/uwb/; hidden until the file exists */
     headline: "Centimeters, on the Moon.",
     summary:
       "There's no GPS on the lunar surface, and dead reckoning drifts as wheels " +

@@ -359,7 +359,7 @@
     var a = el("a", "btn" + (i === 0 ? " pri" : ""), l.label);
     a.href = l.href; a.rel = "noopener"; cta.appendChild(a);
   });
-  var seeWork = el("a", "btn"); seeWork.href = "#work";
+  var seeWork = el("a", "btn"); seeWork.href = "#p-" + PROJECTS[0].slug;
   seeWork.appendChild(document.createTextNode("See the work ")); seeWork.appendChild(el("span", "arr", "↓"));
   cta.appendChild(seeWork);
   /* The statement plays itself once you reach it — a few words a second,
@@ -424,7 +424,6 @@
      Projects
      ========================================================================= */
   var total = PROJECTS.length, repoLines = {};
-  var indexList = document.getElementById("index");
   var projectsHost = document.getElementById("projects");
   var deck = null;
 
@@ -492,20 +491,9 @@
   };
   function ico(html, cls) { var s = el("span", "ico" + (cls ? " " + cls : "")); if (html) s.innerHTML = html; return s; }
 
-  /* ── index of work ── */
   PROJECTS.forEach(function (p, i) {
     ACC[p.slug] = accentOf(p, i);
     TITLES[p.slug] = p.name ? p.name + " – " + p.title : p.title;
-    var li = document.createElement("li");
-    var a = el("a"); a.href = "#p-" + p.slug; a.style.setProperty("--pa", ACC[p.slug]);
-    a.appendChild(el("span", "ix-no", pad(i + 1)));
-    var t = el("span", "ix-t", p.name || p.title);
-    if (p.name) t.appendChild(el("small", null, p.title));
-    a.appendChild(t);
-    a.appendChild(el("span", "ix-k", p.kind));
-    a.appendChild(el("span", "ix-y", p.period));
-    a.appendChild(el("span", "ix-ar", "→"));
-    li.appendChild(a); indexList.appendChild(li);
   });
 
   PROJECTS.forEach(function (p, i) {
@@ -520,7 +508,8 @@
   function buildModelStage(p, i) {
     var s = el("section", "p-model"); s.id = "p-" + p.slug; s.style.setProperty("--pa", ACC[p.slug]);
     var wrap = el("div", "mstage-wrap"), stage = el("div", "mstage");
-    var word = el("div", "mword", (p.name || p.title).toUpperCase());
+    var word = el("div", "mword", p.outline ? null : (p.name || p.title).toUpperCase());
+    if (p.outline) { word.classList.add("mark"); word.style.setProperty("--mark", "url('" + src(p.slug, p.outline) + "')"); }
     word.setAttribute("aria-hidden", "true");
     stage.appendChild(word);
 
@@ -531,17 +520,20 @@
 
     var head = el("div", "mhead"); head.appendChild(meta(p, i)); head.appendChild(chip(p)); stage.appendChild(head);
 
+    /* the highlights sit in a list on the right; the one the view is on lights up */
+    var side = el("ol", "mside");
     var hls = (p.highlights || []).slice(0, 4).map(function (h, k) {
-      var c = el("div", "mcall h" + k);
+      var c = el("li");
       c.appendChild(el("i", null, pad(k + 1)));
       c.appendChild(el("b", null, h[0])); c.appendChild(el("span", null, h[1]));
-      stage.appendChild(c); return c;
+      c.appendChild(el("u"));
+      side.appendChild(c); return c;
     });
+    if (hls.length) stage.appendChild(side);
 
     var lg = el("div", "mlogo");
-    if (p.logo) { var im = el("img"); im.src = src(p.slug, p.logo); im.alt = p.name || ""; lg.appendChild(im); }
-    else lg.appendChild(el("h3", "p-title", p.name || p.title));
-    lg.appendChild(el("p", null, p.title));
+    lg.appendChild(el("h3", "p-title", p.name || p.title));
+    if (p.name) lg.appendChild(el("p", null, p.title));
     stage.appendChild(lg);
 
     var hint = el("div", "mhint");
@@ -551,7 +543,7 @@
       exp.addEventListener("click", function () { openIn(p.slug, entM); });
       hint.appendChild(exp);
     }
-    hint.appendChild(el("span", "lbl", fine ? "Drag to spin · scroll to speed it up" : "Scroll to speed it up"));
+    hint.appendChild(el("span", "lbl", fine ? "Drag to orbit · scroll to rotate" : "Scroll to rotate"));
     var rail = el("div", "mrail"), railI = el("i"); rail.appendChild(railI); hint.appendChild(rail);
     stage.appendChild(hint);
     wrap.appendChild(stage); s.appendChild(wrap);
@@ -583,32 +575,35 @@
     if (model) near(s, function () {
       mount3D(host, src(p.slug, model.file), Object.assign(optsOf(model), { scrub: true, margin: innerWidth > 900 ? 1.7 : 1.1 }), function (h) { view = h; if (view) view.setView(last); });
     });
-    /* The robot turns on its own, like a turntable, and the highlights take
-       turns; scrolling spins it faster (backwards, if you scroll up). It
-       stays until you scroll on. */
-    var last = { az: -0.7, el: 0.03, zoom: 1.1 }, q = 0, wtop = 0, wlen = 1, clock = 0, shownHl = -2;
-    pinned(wrap, function (v) {
-      q = v;
+    /* The robot rotates in sync with the scroll through a full 360°,
+       and the highlights follow along. Dragging nudges the orbit; letting go
+       holds the view. */
+    var last = { az: 0, el: 0, zoom: 1 }, shownHl = -2;
+    pinned(wrap, function (q) {
       ww = ww || word.offsetWidth;
       word.style.transform = "translate3d(" + lerp(innerWidth * 0.55, -ww + innerWidth * 0.3, q) + "px,-50%,0)";
       railI.style.transform = "scaleX(" + q + ")";
-    }, 8);
-    Engine.add({
-      measure: function (vh) { wtop = absTop(wrap); wlen = wrap.offsetHeight; },
-      update: function (y, vh, dt) {
-        if (y + vh < wtop || y > wtop + wlen) { clock = 0; return; }   /* off screen: rest */
-        var on = y > wtop - vh * 0.35;
-        var sv = Engine.vel() / vh;
-        last.az += dt * (0.3 + Math.max(-4, Math.min(4, sv * 2.2)));
-        clock += dt * (on ? 1 + boost() * 0.6 : 0);
-        last.el = 0.04 + Math.sin(last.az * 0.5) * 0.09;
-        last.zoom = lerp(1.1, 0.95, smooth(q));
-        if (view) view.setView(last);
-        var k = on ? Math.floor(clock / 3.4) % hls.length : -1;
-        if (k !== shownHl) { shownHl = k; hls.forEach(function (c, j) { c.classList.toggle("on", j === k); }); }
+
+      last.az = q * Math.PI * 2;
+      last.el = Math.sin(q * Math.PI) * 0.08;
+      last.zoom = lerp(1, 0.95, smooth(q));
+      if (view) view.setView(last);
+
+      var k = Math.min(hls.length - 1, Math.floor(q * hls.length));
+      var frac = clamp01(q * hls.length - k);
+      if (k !== shownHl) {
+        shownHl = k;
+        hls.forEach(function (c, j) {
+          c.classList.toggle("on", j === k);
+          if (j < k) c.lastChild.style.transform = "scaleX(1)";
+          else if (j > k) c.lastChild.style.transform = "scaleX(0)";
+        });
       }
-    });
-    Snap.add(function () { return wtop; });
+      if (k >= 0 && hls[k]) {
+        hls[k].lastChild.style.transform = "scaleX(" + frac.toFixed(3) + ")";
+      }
+    }, 8);
+    Snap.add(function () { return absTop(wrap); });
     Snap.add(snapTop(body.querySelector(".p-title")));
     addEventListener("resize", function () { ww = 0; });
   }
@@ -636,6 +631,18 @@
     mrow.appendChild(meta(p, i)); mrow.appendChild(chip(p));
     open.appendChild(mrow);
     open.appendChild(el("p", "lbl r-kicker", p.kicker || p.kind));
+    if (p.lab) {
+      var lab = el("div", "r-lab");
+      if (p.lab.logo) {
+        var lim = el("img"); lim.src = src(p.slug, p.lab.logo); lim.alt = p.lab.org || "";
+        lim.onerror = function () { lim.remove(); };
+        lab.appendChild(lim);
+      }
+      var lt = el("span"); lt.appendChild(document.createTextNode("Conducted in the "));
+      lt.appendChild(el("b", null, p.lab.name));
+      if (p.lab.org) lt.appendChild(document.createTextNode(" · " + p.lab.org));
+      lab.appendChild(lt); open.appendChild(lab);
+    }
     var head = el("h2", "r-head"), cut = p.headline.indexOf(",");
     var plain = cut >= 0 ? p.headline.slice(0, cut + 1) : p.headline, em = cut >= 0 ? p.headline.slice(cut + 1).trim() : "";
     function headWords(text, into) {
@@ -1440,8 +1447,10 @@
      ========================================================================= */
   var bar = document.getElementById("bar"), nav = document.querySelector(".nav"), pill = document.querySelector(".pill");
   var ind = pill.querySelector(".ind"), navLinks = Array.prototype.slice.call(pill.querySelectorAll("a[href^='#']"));
+  var firstId = "p-" + PROJECTS[0].slug;
+  navLinks[0].setAttribute("href", "#" + firstId);
   /* [section, which link it lights]: the card deck after the research is still Work */
-  var targets = [["work", 0], ["p-uwb", 1], ["more", 0], ["stack", 2]].map(function (t) { return { n: document.getElementById(t[0]), link: t[1] }; }).filter(function (t) { return t.n; });
+  var targets = [[firstId, 0], ["p-uwb", 1], ["more", 0], ["stack", 2]].map(function (t) { return { n: document.getElementById(t[0]), link: t[1] }; }).filter(function (t) { return t.n; });
   var tops = [], heroEnd = 0, active = -2;
   Engine.add({
     measure: function (vh) {
@@ -1477,6 +1486,21 @@
     });
   })();
 
+  /* Where the page comes to rest for a section: pinned stages from their
+     first frame, a deck card where it has just settled on the stack, the
+     rest just under the header. */
+  function restY(n) {
+    if (!n || n.id === "top") return 0;
+    if (n.classList.contains("card")) {
+      var cs = getComputedStyle(n);
+      /* a stuck card's own top moves; the mark in front of it doesn't */
+      if (cs.position === "sticky") return absTop(n.previousElementSibling) - (parseFloat(cs.top) || NAV);
+      return absTop(n) - NAV - 16;
+    }
+    if (n.classList.contains("p-model") || n.classList.contains("p-research") || n.classList.contains("outro")) return absTop(n);
+    return absTop(n) - NAV;
+  }
+
   /* ── in-page links glide ── */
   document.addEventListener("click", function (e) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -1486,11 +1510,92 @@
     var target = id ? document.getElementById(id) : document.body;
     if (!target) return;
     e.preventDefault();
-    var pinStart = target.classList.contains("p-model") || target.id === "top";
-    var to = !id || id === "top" ? 0 : absTop(target) - (pinStart ? 0 : target.classList.contains("p-research") ? 0 : NAV);
-    Glide.to(to, "link");
+    Glide.to(id ? restY(target) : 0, "link");
     if (id && location.hash !== "#" + id) history.pushState(null, "", "#" + id);
   });
+
+  /* ============================================================================
+     Rail — a dot for every project down the left edge, there the whole way.
+     Hover it for the names; the one you're in stretches into its accent.
+     ========================================================================= */
+  var rail = document.getElementById("rail");
+  var stops = [{ id: "top", label: "Intro", c: "var(--brand-2)" }]
+    .concat(PROJECTS.map(function (p, i) { return { id: "p-" + p.slug, no: pad(i + 1), label: p.name || p.title, c: ACC[p.slug] }; }))
+    .concat([{ id: "stack", label: "Stack", c: "var(--fg)" }, { id: "contact", label: "Contact", c: "var(--brand)" }])
+    .filter(function (s) { return (s.n = document.getElementById(s.id)); });
+  stops.forEach(function (s, j) {
+    var a = el("a"); a.href = "#" + s.id;
+    a.style.setProperty("--pa", s.c); a.style.setProperty("--j", j);
+    var t = el("span", "rl-t");
+    if (s.no) t.appendChild(el("b", null, s.no));
+    t.appendChild(document.createTextNode(s.label));
+    a.appendChild(el("i")); a.appendChild(t);
+    rail.appendChild(a); s.a = a;
+  });
+  (function () {
+    var on = -1, peekT = 0;
+    Engine.add({
+      measure: function () { stops.forEach(function (s) { s.y = restY(s.n); }); },
+      update: function (y, vh) {
+        var k = 0;
+        for (var j = 0; j < stops.length; j++) if (y + vh * 0.35 >= stops[j].y) k = j;
+        if (k === on) return;
+        var first = on < 0; on = k;
+        stops.forEach(function (s, j) {
+          s.a.classList.toggle("on", j === k);
+          if (j === k) s.a.setAttribute("aria-current", "true"); else s.a.removeAttribute("aria-current");
+        });
+        document.documentElement.style.setProperty("--cur", stops[k].c);
+        /* arriving somewhere new shows its name for a moment */
+        if (first) return;
+        rail.classList.add("peek"); clearTimeout(peekT);
+        peekT = setTimeout(function () { rail.classList.remove("peek"); }, 1600);
+      }
+    });
+  })();
+
+  /* ============================================================================
+     Scrollbar — the browser's is hidden; this one is drawn to match, and
+     takes the colour of whichever project you're in. Drag the thumb, or
+     click the track to glide there.
+     ========================================================================= */
+  (function () {
+    var sb = document.getElementById("sb"), th = sb.firstElementChild, PAD = 6;
+    var trackH = 1, thH = 40, max = 1, shown = "", drag = null, idleT = 0;
+    function run() { return Math.max(1, trackH - thH); }
+    Engine.add({
+      measure: function (vh) {
+        var sh = document.documentElement.scrollHeight;
+        max = Math.max(1, sh - vh); trackH = vh - PAD * 2;
+        thH = Math.max(40, Math.round(trackH * vh / sh));
+        th.style.height = thH + "px";
+      },
+      update: function (y) {
+        var tf = "translate3d(0," + (PAD + run() * clamp01(y / max)).toFixed(1) + "px,0)";
+        if (tf === shown) return;
+        /* lit while the page is moving, quiet once it stops */
+        if (shown) { sb.classList.add("busy"); clearTimeout(idleT); idleT = setTimeout(function () { sb.classList.remove("busy"); }, 900); }
+        shown = tf; th.style.transform = tf;
+      }
+    });
+    th.addEventListener("pointerdown", function (e) {
+      if (e.button !== 0) return;
+      e.preventDefault(); e.stopPropagation();
+      Glide.stop();
+      drag = { y: e.clientY, from: window.scrollY };
+      th.setPointerCapture(e.pointerId);
+      sb.classList.add("drag"); document.documentElement.classList.add("sb-drag");
+    });
+    th.addEventListener("pointermove", function (e) {
+      if (drag) window.scrollTo({ top: drag.from + (e.clientY - drag.y) * max / run(), behavior: "instant" });
+    });
+    function up() { if (!drag) return; drag = null; sb.classList.remove("drag"); document.documentElement.classList.remove("sb-drag"); }
+    th.addEventListener("pointerup", up); th.addEventListener("pointercancel", up);
+    sb.addEventListener("pointerdown", function (e) {
+      if (e.target !== sb || e.button !== 0) return;
+      Glide.to(clamp01((e.clientY - PAD - thH / 2) / run()) * max, "link");
+    });
+  })();
 
   /* ============================================================================
      Source viewer — excerpts fetched from GitHub at a pinned commit, so the
@@ -1803,7 +1908,6 @@
 
   /* the rest of the page's resting points */
   Array.prototype.forEach.call(document.querySelectorAll("[data-snap]"), function (n) { Snap.add(snapTop(n)); });
-  Snap.add(snapTop(document.querySelector("#work .sec-title"), NAV + 40));
   Snap.add(snapTop(document.querySelector("#stack .sec-title"), NAV + 40));
   Snap.add(snapTop(document.getElementById("bench"), NAV + 180));
   Snap.add(snapTop(document.querySelector(".outro"), 0));
