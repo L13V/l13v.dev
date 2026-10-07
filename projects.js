@@ -64,12 +64,13 @@ const PROJECTS = [
   {
     slug: "2026_59",
     repo: "2026_59",
-    title: "FRC 59 — 2026 competition robot",
+    name: "Rico",               /* optional; with a logo, the logo stands in for it in the heading */
+    title: "2026 FIRST Robotics Robot",
     kind: "Robot code",
     period: "2026",
     status: "In season",
     lead: true,                 /* gets the big plate at the top of the page */
-    logo: "rico-logo.webp",     /* optional, from media/<slug>/ — shown beside the title */
+    logo: "rico-logo.webp",     /* optional, from media/<slug>/ — leads the heading */
     summary:
       "Swerve drive and a turreted shooter that keeps firing while the robot " +
       "moves. Written against AdvantageKit's IO pattern, so every subsystem has " +
@@ -85,13 +86,16 @@ const PROJECTS = [
     ],
     notes: [],                  /* the detail lives in the code viewer */
     links: [],                  /* the code viewer links to the repo */
-    /* "See it in action" — footage opens in the media viewer. Shorts are
-       portrait, so mark them { vertical: true }. */
+    /* "See it in action" — footage opens in the media viewer, on the match.
+       Shorts are portrait, so mark them { vertical: true }. `group` sorts the
+       viewer's side list into headed sections. */
     action: [
-      yt("XTC8Qh_Npd8", "Final 2, South Florida Regional", { label: "MATCH" }),
-      yt("2cPXvFHHiM4", "Practice", { label: "PRACTICE", vertical: true }),
+      yt("bhpbFQyv97c", "Robot reveal", { label: "REVEAL", group: "Robot" }),
+      yt("XTC8Qh_Npd8", "Final 2, South Florida Regional", { label: "MATCH", group: "Robot" }),
+      yt("2cPXvFHHiM4", "Autonomous routine", { label: "AUTO", vertical: true, group: "Programming highlights" }),
     ],
     code: {
+      group: "Programming highlights",   /* where its diagrams go in the media viewer */
       repo: "L13V/2026_59",
       ref: "8472469e7a3e07686f2de451cba5eaad9be3431f",
       root: "src/main/java/org/ramtech/frc2026/",
@@ -137,7 +141,7 @@ const PROJECTS = [
       /* Compressed from 12.6 MB to 4.9 MB; see media/README.md for the exact
          command if you re-export it. The poster is a still of the viewer's
          opening shot, so the hand-off to the live model doesn't jump. */
-      mdl("rico-2026.glb", "Rico — the 2026 robot. Drag to orbit, scroll to zoom", { poster: "rico-poster.webp" }),
+      mdl("rico-2026.glb", "Rico — the 2026 robot. Drag to orbit, click then scroll to zoom", { poster: "rico-poster.webp" }),
     ],
   },
 
