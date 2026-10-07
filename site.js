@@ -26,7 +26,7 @@
      Scroll engine — one rAF loop, every scene an item with measure()/update().
      ========================================================================= */
   var Engine = (function () {
-    var items = [], vh = innerHeight, force = true, t0 = 0;
+    var items = [], vh = innerHeight, force = true, t0 = 0, lastY = window.scrollY, vel = 0;
     function add(it) { items.push(it); if (it.measure) it.measure(vh); force = true; return it; }
     function measure() {
       vh = innerHeight;
@@ -37,6 +37,10 @@
     function loop(now) {
       var dt = t0 ? Math.min(0.05, (now - t0) / 1000) : 0.016; t0 = now;
       var y = window.scrollY;
+      /* scroll speed in px/s, smoothed — scenes use it to play faster while you scroll */
+      vel += ((y - lastY) / Math.max(dt, 0.008) - vel) * Math.min(1, dt * 10);
+      if (Math.abs(vel) < 1) vel = 0;
+      lastY = y;
       for (var i = 0; i < items.length; i++) items[i].update(y, vh, dt, force);
       force = false;
       requestAnimationFrame(loop);
@@ -48,7 +52,7 @@
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
     if ("ResizeObserver" in window) new ResizeObserver(later).observe(document.body);
     requestAnimationFrame(loop);
-    return { add: add, measure: measure, vh: function () { return vh; } };
+    return { add: add, measure: measure, vh: function () { return vh; }, vel: function () { return vel; } };
   })();
 
   /* A tall section with a sticky stage inside: progress runs 0→1 while the
@@ -78,6 +82,104 @@
       }
     });
   }
+
+  /* How much faster a scene should play right now: 0 at rest, rising with
+     scroll speed (about +3 at a screen per second), capped. */
+  function boost() { return Math.min(8, Math.abs(Engine.vel()) / Engine.vh() * 3); }
+
+  /* ============================================================================
+     Glide + snap. A slow scroll is always the browser's own. A flick — a fast
+     burst of wheel or trackpad movement — glides to the next important point
+     in that direction instead of flying past it, and the rest of that
+     flick's momentum is absorbed. On touch screens the browser's own scroll
+     snapping does the same job, against the same points.
+     ========================================================================= */
+  var NAV = 64;
+  var Glide = (function () {
+    var raf = 0, kind = null;
+    function stop() { cancelAnimationFrame(raf); raf = 0; kind = null; document.documentElement.classList.remove("gliding"); }
+    function to(y, k, onDone) {
+      stop();
+      var max = document.documentElement.scrollHeight - innerHeight;
+      var from = window.scrollY, dest = Math.max(0, Math.min(max, y)), dist = Math.abs(dest - from);
+      if (dist < 2) { if (onDone) onDone(); return; }
+      if (document.hidden) { window.scrollTo(0, dest); if (onDone) onDone(); return; }
+      kind = k || "link";
+      document.documentElement.classList.add("gliding");
+      var dur = Math.min(1300, 520 + dist * 0.11), t0 = performance.now();
+      (function step(now) {
+        var t = Math.min(1, (now - t0) / dur), e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        window.scrollTo({ top: from + (dest - from) * e, behavior: "instant" });
+        if (t < 1) raf = requestAnimationFrame(step);
+        else { stop(); if (onDone) onDone(); }
+      })(t0);
+    }
+    return { to: to, stop: stop, kind: function () { return kind; } };
+  })();
+
+  var Snap = (function () {
+    var getters = [], pts = [], marks = null;
+    var touch = window.matchMedia && matchMedia("(pointer:coarse)").matches;
+    if (touch) document.documentElement.classList.add("touch");
+    function add(fn) { getters.push(fn); }
+    function measure() {
+      var max = document.documentElement.scrollHeight - innerHeight, seen = {};
+      pts = [];
+      getters.forEach(function (g) {
+        var v = g(); (Array.isArray(v) ? v : [v]).forEach(function (y) {
+          if (y == null || !isFinite(y)) return;
+          y = Math.round(Math.max(0, Math.min(max, y)));
+          if (!seen[y]) { seen[y] = 1; pts.push(y); }
+        });
+      });
+      pts.sort(function (a, b) { return a - b; });
+      /* the same points as CSS snap targets, for touch */
+      if (touch) {
+        if (!marks) { marks = el("div"); marks.setAttribute("aria-hidden", "true"); document.body.appendChild(marks); }
+        marks.textContent = "";
+        pts.forEach(function (y) { var m = el("i", "snapmark"); m.style.top = (y + NAV) + "px"; marks.appendChild(m); });
+      }
+    }
+    function next(from, dir) {
+      for (var i = 0; i < pts.length; i++) {
+        var k = dir > 0 ? i : pts.length - 1 - i;
+        if (dir > 0 ? pts[k] > from + 24 : pts[k] < from - 24) return pts[k];
+      }
+      return null;
+    }
+    /* wheel: watch the last ~130 ms; a fast burst is a flick */
+    var hist = [], lockUntil = 0, glideEnd = 0, lastDir = 0;
+    addEventListener("wheel", function (e) {
+      if (e.ctrlKey || document.body.style.overflow === "hidden") return;
+      var dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
+      if (!dy) return;
+      var now = performance.now(), dir = dy > 0 ? 1 : -1;
+      if (Glide.kind() === "link") Glide.stop();
+      hist.push([now, dy]);
+      while (hist.length && now - hist[0][0] > 130) hist.shift();
+      var sum = 0; hist.forEach(function (h) { if ((h[1] > 0 ? 1 : -1) === dir) sum += Math.abs(h[1]); });
+      var snapping = Glide.kind() === "snap";
+      if (snapping || now < lockUntil) {
+        e.preventDefault();
+        /* still spinning after the last glide landed: that's another flick */
+        if (!snapping && dir === lastDir && sum >= 380 && now - glideEnd > 160) flick(dir, now);
+        else lockUntil = Math.min(now + 170, glideEnd + 900);
+        return;
+      }
+      if (sum >= 380) { e.preventDefault(); flick(dir, now); }
+    }, { passive: false });
+    function flick(dir, now) {
+      var to = next(window.scrollY, dir);
+      if (to == null) return;
+      lastDir = dir; hist = [];
+      Glide.to(to, "snap", function () { glideEnd = performance.now(); lockUntil = glideEnd + 170; });
+      lockUntil = now + 2000;
+    }
+    ["touchstart", "keydown"].forEach(function (t) { addEventListener(t, function () { if (Glide.kind() === "link") Glide.stop(); }, { passive: true }); });
+    return { add: add, measure: measure, points: function () { return pts; } };
+  })();
+  /* an element's snap point: its top a little under the header */
+  function snapTop(n, off) { return function () { return n ? absTop(n) - (off == null ? NAV + 24 : off) : null; }; }
 
   /* ============================================================================
      Signal field — a dot grid that radio pulses ripple across. The pointer
@@ -182,6 +284,7 @@
     nameEl.style.transform = "translate3d(" + (lean.x * 14) + "px," + (lean.y * 10) + "px,0) scale(" + (1 + heroP * 0.08) + ")";
   } });
   var heroMeta = document.querySelectorAll(".hero-meta");
+  Snap.add(function () { return 0; });
   pinned(document.querySelector(".hero"), function (p) {
     var e = p * p;
     heroP = p;
@@ -217,12 +320,25 @@
   var seeWork = el("a", "btn"); seeWork.href = "#work";
   seeWork.appendChild(document.createTextNode("See the work ")); seeWork.appendChild(el("span", "arr", "↓"));
   cta.appendChild(seeWork);
-  var stmtFoot = document.getElementById("stmt-foot");
-  pinned(document.querySelector(".statement"), function (p) {
-    var lit = span(p, 0.06, 0.7) * words.length;
-    words.forEach(function (w, i) { w.classList.toggle("on", i < lit); });
-    stmtFoot.classList.toggle("on", p > 0.72);
-  }, 12);
+  /* The statement plays itself once you reach it — a few words a second,
+     faster while you scroll — and starts over if you go back up past it. */
+  var stmtFoot = document.getElementById("stmt-foot"), stmtSec = document.querySelector(".statement");
+  (function () {
+    var top = 0, lit = 0, shown = -1;
+    Engine.add({
+      measure: function () { top = absTop(stmtSec); },
+      update: function (y, vh, dt) {
+        if (y < top - vh * 0.45) lit = 0;
+        else if (lit < words.length) lit = Math.min(words.length, lit + dt * 3.2 * (1 + boost()));
+        var n = Math.floor(lit);
+        if (n === shown) return;
+        shown = n;
+        words.forEach(function (w, i) { w.classList.toggle("on", i < n); });
+        stmtFoot.classList.toggle("on", n >= words.length);
+      }
+    });
+    Snap.add(function () { return top; });
+  })();
 
   /* ============================================================================
      Media registry — every project keeps its own list for the viewer.
@@ -411,7 +527,7 @@
       exp.addEventListener("click", function () { openIn(p.slug, entM); });
       hint.appendChild(exp);
     }
-    hint.appendChild(el("span", "lbl", fine ? "Drag to spin · scroll to turn" : "Scroll to turn"));
+    hint.appendChild(el("span", "lbl", fine ? "Drag to spin · scroll to speed it up" : "Scroll to speed it up"));
     var rail = el("div", "mrail"), railI = el("i"); rail.appendChild(railI); hint.appendChild(rail);
     stage.appendChild(hint);
     wrap.appendChild(stage); s.appendChild(wrap);
@@ -443,18 +559,33 @@
     if (model) near(s, function () {
       mount3D(host, src(p.slug, model.file), Object.assign(optsOf(model), { scrub: true, margin: innerWidth > 900 ? 1.7 : 1.1 }), function (h) { view = h; if (view) view.setView(last); });
     });
-    var last = { az: -0.7, el: 0.02, zoom: 1.1 };
-    pinned(wrap, function (q) {
+    /* The robot turns on its own, like a turntable, and the highlights take
+       turns; scrolling spins it faster (backwards, if you scroll up). It
+       stays until you scroll on. */
+    var last = { az: -0.7, el: 0.03, zoom: 1.1 }, q = 0, wtop = 0, wlen = 1, clock = 0, shownHl = -2;
+    pinned(wrap, function (v) {
+      q = v;
       ww = ww || word.offsetWidth;
       word.style.transform = "translate3d(" + lerp(innerWidth * 0.55, -ww + innerWidth * 0.3, q) + "px,-50%,0)";
-      last = { az: -0.7 + q * Math.PI * 1.7, el: 0.03 + Math.sin(q * Math.PI) * 0.16 - q * 0.06, zoom: lerp(1.12, 0.94, smooth(q)) };
-      if (view) view.setView(last);
-      hls.forEach(function (c, k) {
-        var a = 0.1 + k * 0.2, b = k === hls.length - 1 ? 1.01 : a + 0.24;
-        c.classList.toggle("on", q >= a && q < b);
-      });
       railI.style.transform = "scaleX(" + q + ")";
     }, 8);
+    Engine.add({
+      measure: function (vh) { wtop = absTop(wrap); wlen = wrap.offsetHeight; },
+      update: function (y, vh, dt) {
+        if (y + vh < wtop || y > wtop + wlen) { clock = 0; return; }   /* off screen: rest */
+        var on = y > wtop - vh * 0.35;
+        var sv = Engine.vel() / vh;
+        last.az += dt * (0.3 + Math.max(-4, Math.min(4, sv * 2.2)));
+        clock += dt * (on ? 1 + boost() * 0.6 : 0);
+        last.el = 0.04 + Math.sin(last.az * 0.5) * 0.09;
+        last.zoom = lerp(1.1, 0.95, smooth(q));
+        if (view) view.setView(last);
+        var k = on ? Math.floor(clock / 3.4) % hls.length : -1;
+        if (k !== shownHl) { shownHl = k; hls.forEach(function (c, j) { c.classList.toggle("on", j === k); }); }
+      }
+    });
+    Snap.add(function () { return wtop; });
+    Snap.add(snapTop(body.querySelector(".p-title")));
     addEventListener("resize", function () { ww = 0; });
   }
 
@@ -583,19 +714,44 @@
         } catch (e) { cv.classList.add("failed"); }
       });
     }, "100% 0px");
-    pinned(story, function (q) {
-      P = q;
+    /* The story plays itself, a chapter at a time. Where you've scrolled to
+       picks the chapter; that chapter plays slowly and then holds on its last
+       frame until you scroll on. Scrolling speeds it up, a flick lands on
+       the next chapter, and scrolling back rewinds. */
+    var N = RANGES.length, stTop = 0, stLen = 1, lastP = -1;
+    var AUTO = 0.021;   /* story per second: a chapter takes 7–10 s on its own */
+    var RUSH = 0.55;    /* catching up to a chapter you've scrolled to */
+    function render(q) {
       if (scene) scene.setProgress(q);
       chapEls.forEach(function (c, k) {
-        var on = q >= RANGES[k][0] && q < RANGES[k][1];
-        c.classList.toggle("on", on);
+        c.classList.toggle("on", q >= RANGES[k][0] && q < RANGES[k][1]);
         c.classList.toggle("past", q >= RANGES[k][1]);
       });
-      railB.forEach(function (b, k) { b.style.transform = "scaleX(" + span(q, RANGES[k][0], RANGES[k][1]) + ")"; });
+      railB.forEach(function (b, k) { b.style.transform = "scaleX(" + span(q, RANGES[k][0], RANGES[k][1] - 0.003) + ")"; });
       hud.classList.toggle("on", q > 0.4);
       hSolve.r.style.display = q > 0.62 && q < 0.8 ? "" : "none";
       if (q < 0.62) hSolve.b.textContent = "—";
-    }, 7);
+    }
+    Engine.add({
+      measure: function (vh) { stTop = absTop(story); stLen = Math.max(1, story.offsetHeight - vh); },
+      update: function (y, vh, dt, force) {
+        if (y < stTop - vh * 2) P = 0;                     /* well above: rewound */
+        else if (y > stTop + stLen + vh * 2) P = 1;        /* well below: played out */
+        else {
+          /* each chapter gets an equal share of the scroll */
+          var k = y < stTop - vh * 0.3 ? -1 : Math.min(N - 1, Math.floor(clamp01((y - stTop) / stLen) * N + 1e-6));
+          var lo = k < 0 ? 0 : RANGES[k][0];
+          var hi = k < 0 ? 0 : k === N - 1 ? 1 : RANGES[k][1] - 0.003;
+          var b = boost();
+          if (P < lo) P = Math.min(lo, P + dt * RUSH * (1 + b));
+          else if (P > hi) P = Math.max(hi, P - dt * RUSH * (1 + b));
+          else P = Math.min(hi, P + dt * AUTO * (1 + b * 1.6));
+        }
+        if (P !== lastP || force) { lastP = P; render(P); }
+      }
+    });
+    Snap.add(function () { var out = []; for (var k = 0; k < N; k++) out.push(stTop + (k / N) * stLen + (k ? 2 : 0)); return out; });
+    Snap.add(snapTop(open.querySelector(".r-head"), NAV + 90));
 
     if (D) s.appendChild(results(p, D));
     s.appendChild(researchTail(p));
@@ -635,7 +791,7 @@
     });
     var conc = byMat[byMat.length - 1];
 
-    var intro = el("div"); intro.setAttribute("data-rv", "");
+    var intro = el("div"); intro.setAttribute("data-rv", ""); intro.setAttribute("data-snap", "");
     var h = el("h3", "r-sub"); h.innerHTML = "One blocked anchor. <em>Up to nine times</em> the error.";
     intro.appendChild(h);
     intro.appendChild(el("p", "r-lede", "Five materials, each placed in one anchor's line of sight in turn, 30 seconds a trial, with smoothing and outlier rejection switched off so nothing hid a bad link. Everything below is drawn from those logs."));
@@ -664,7 +820,7 @@
     }
     function hideTip() { tip.classList.remove("on"); }
 
-    var sev = el("div", "panel"); sev.setAttribute("data-rv", "");
+    var sev = el("div", "panel"); sev.setAttribute("data-rv", ""); sev.setAttribute("data-snap", "");
     var sh = el("div", "panel-hd"), sht = el("div");
     sht.appendChild(el("h4", null, "Which material hurts most?"));
     sht.appendChild(el("p", null, "Mean 3D error with one anchor blocked, across the four anchors; whiskers are the spread between them. Dashed: the clear line."));
@@ -707,7 +863,7 @@
     box.appendChild(sev);
 
     /* mechanism scatter + anchor grid */
-    var g2 = el("div", "grid2");
+    var g2 = el("div", "grid2"); g2.setAttribute("data-snap", "");
     var mech = el("div", "panel"); mech.setAttribute("data-rv", "");
     var mh = el("div", "panel-hd"), mht = el("div");
     mht.appendChild(el("h4", null, "Every centimeter of delay became a centimeter of error."));
@@ -785,7 +941,7 @@
     box.appendChild(explorer(p, D));
 
     /* findings */
-    var fs = el("div", "finds");
+    var fs = el("div", "finds"); fs.setAttribute("data-snap", "");
     var FC = { Supported: "#5cd0b3", Rejected: "#fc6255", Lunar: "#f5c04f", Next: "#7d97ff" };
     p.findings.forEach(function (f, k) {
       var d = el("div", "find"); d.setAttribute("data-rv", ""); d.style.setProperty("--d", (k * 0.08) + "s");
@@ -803,7 +959,7 @@
 
   /* Replay a trial: the logged fixes, top-down on the bench, at 3× speed. */
   function explorer(p, D) {
-    var panel = el("div", "panel"); panel.setAttribute("data-rv", "");
+    var panel = el("div", "panel"); panel.setAttribute("data-rv", ""); panel.setAttribute("data-snap", "");
     var hd = el("div", "panel-hd"), ht = el("div");
     ht.appendChild(el("h4", null, "Replay a trial."));
     ht.appendChild(el("p", null, "Every fix the tag logged, seen from above the bench, played at three times speed. Pick a material and the anchor it blocks."));
@@ -975,7 +1131,7 @@
   function hexA(hex, a) { var n = parseInt(hex.slice(1), 16); return "rgba(" + (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255) + "," + a + ")"; }
 
   function researchTail(p) {
-    var t = el("div", "wrap r-tail");
+    var t = el("div", "wrap r-tail"); t.setAttribute("data-snap", "");
     var L = el("div"), R = el("div");
     L.setAttribute("data-rv", ""); R.setAttribute("data-rv", ""); R.style.setProperty("--d", ".12s");
     L.appendChild(el("span", "lbl", "The rig"));
@@ -1009,7 +1165,7 @@
       deck = el("div", "wrap deck"); deck.id = "more";
       var hd = el("div", "sec-head"); hd.style.padding = "0 0 clamp(1.6rem,4vh,2.6rem)"; hd.style.border = "0";
       var ht = el("h2", "sec-title"); ht.innerHTML = "More <em>from the bench</em>";
-      ht.setAttribute("data-rv", "");
+      ht.setAttribute("data-rv", ""); ht.setAttribute("data-snap", "");
       hd.appendChild(ht); deck.appendChild(hd);
       projectsHost.appendChild(deck);
     }
@@ -1043,6 +1199,10 @@
     if (!deck) return;
     var cards = Array.prototype.slice.call(deck.querySelectorAll(".card"));
     var marks = Array.prototype.slice.call(deck.querySelectorAll(".card-mark"));
+    cards.forEach(function (c, k) {
+      /* each card's snap point is where it has just come to rest */
+      Snap.add(function () { return absTop(marks[k]) - (parseFloat(c.style.top) || NAV + 13 + k * 14); });
+    });
     cards.forEach(function (c, k) {
       /* a card taller than the screen sticks by its bottom edge instead, so
          none of it is ever hidden under the next one */
@@ -1197,15 +1357,29 @@
   /* ============================================================================
      Capabilities — rows of type that slide across as you pass
      ========================================================================= */
-  var mqHost = document.getElementById("mq");
+  /* the rows drift on their own, in alternating directions; scrolling gives
+     them a push */
+  var mqHost = document.getElementById("mq"), rowsMq = [];
   STACK.forEach(function (row, k) {
     var r = el("div", "mq"); r.setAttribute("data-rv", "");
     r.appendChild(el("span", "lbl mq-lbl", row[0]));
     var tr = el("div", "mq-track"), items = row[1].split(" · ");
-    for (var rep = 0; rep < 3; rep++) items.forEach(function (it) { tr.appendChild(el("span", null, it)); tr.appendChild(el("span", "dot", "·")); });
+    for (var rep = 0; rep < 4; rep++) items.forEach(function (it) { tr.appendChild(el("span", null, it)); tr.appendChild(el("span", "dot", "·")); });
     r.appendChild(tr); mqHost.appendChild(r);
-    var dir = k % 2 ? 1 : -1;
-    passing(r, function (q) { tr.style.transform = "translate3d(" + (-33.33 + dir * (q - 0.5) * 22) + "%,0,0)"; });
+    rowsMq.push({ r: r, tr: tr, dir: k % 2 ? 1 : -1, pos: Math.random() * 400, w: 0, top: 0, h: 0, speed: 0 });
+  });
+  Engine.add({
+    measure: function () { rowsMq.forEach(function (o) { o.w = o.tr.scrollWidth / 4; o.top = absTop(o.r); o.h = o.r.offsetHeight; }); },
+    update: function (y, vh, dt) {
+      var kick = Math.min(1600, Math.abs(Engine.vel()) * 0.55);
+      rowsMq.forEach(function (o) {
+        if (y + vh < o.top || y > o.top + o.h || !o.w) return;
+        o.speed += (46 + kick - o.speed) * Math.min(1, dt * 4);
+        o.pos = (o.pos + o.dir * o.speed * dt) % o.w;
+        if (o.pos < 0) o.pos += o.w;
+        o.tr.style.transform = "translate3d(" + (-o.w - o.pos).toFixed(1) + "px,0,0)";
+      });
+    }
   });
 
   var bench = document.getElementById("bench");
