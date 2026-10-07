@@ -41,7 +41,6 @@ const SITE = {
   name: "Liev Dorfman",
   handle: "L13V",
   role: "Robotics software & infrastructure",
-  team: "FRC 59 · RAMTECH",
   location: "",
   /* The opening statement — the first thing anyone reads, set large. */
   intro:

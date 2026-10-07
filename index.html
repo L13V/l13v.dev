@@ -98,8 +98,6 @@ header.bar .hd-lead,header.bar .hd-role{opacity:1; visibility:visible; transform
 @keyframes drift{from{transform:translate3d(-2%,0,0) scale(1)}to{transform:translate3d(3%,-3%,0) scale(1.1)}}
 /* must exclude .glow — it is absolutely positioned and this would reset it */
 .hero > *:not(.glow){position:relative; z-index:1}
-.eyebrow{display:inline-flex; align-items:center; gap:.65rem; margin:0 0 1.5rem; padding:.42rem .8rem; border:1px solid var(--line-2); border-radius:100px; background:rgba(14,19,28,.6)}
-.eyebrow b{font-family:var(--mono); font-size:.64rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--fg-2)}
 h1{
   font-weight:800; font-size:clamp(2.5rem,8.6vw,6.1rem); line-height:.92; letter-spacing:-.045em;
   margin:0 0 1.15rem; text-transform:uppercase; text-wrap:balance;
@@ -501,7 +499,6 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   <section class="hero">
     <div class="glow"></div>
     <div class="wrap">
-      <p class="eyebrow hz" style="animation-delay:.05s"><span class="dot"></span><b id="eyebrow"></b></p>
       <h1 class="hz" style="animation-delay:.12s" id="h1"></h1>
       <div class="hero-cols">
         <div class="hz" style="animation-delay:.2s">
@@ -568,7 +565,6 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
 
   /* header + hero */
   document.getElementById("hd-role").textContent = SITE.role;
-  document.getElementById("eyebrow").textContent = SITE.team;
   document.getElementById("sub").textContent = SITE.intro2;
   document.getElementById("yr").textContent = String(new Date().getFullYear());
 
