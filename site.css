@@ -27,6 +27,9 @@
 @supports (height:100svh){ :root{ --vh:100svh } }
 
 *,*::before,*::after{box-sizing:border-box}
+/* touch screens snap to the same resting points a flick does on desktop */
+html.touch{scroll-snap-type:y proximity}
+.snapmark{position:absolute; left:0; width:1px; height:1px; scroll-snap-align:start; scroll-snap-stop:always; pointer-events:none}
 html{scroll-padding-top:var(--nav); -webkit-text-size-adjust:100%}
 body{
   margin:0; background:var(--bg); color:var(--fg);
@@ -96,7 +99,7 @@ button{font:inherit; color:inherit}
 @keyframes cue{to{top:100%}}
 
 /* ── statement ────────────────────────────────── */
-.statement{height:calc(var(--vh) * 2.6); position:relative}
+.statement{height:calc(var(--vh) * 1.9); position:relative}
 .statement-pin{position:sticky; top:0; height:var(--vh); display:flex; align-items:center}
 .stmt{
   margin:0; font-size:clamp(2rem,5.6vw,5.4rem); line-height:1.04; letter-spacing:-.038em; font-weight:500;
@@ -217,7 +220,7 @@ dl.spec{margin:0}
 
 /* ── 01 · the model stage (Rico) ─────────────── */
 .p-model{position:relative; --pa:#ffc21a; overflow-x:clip}
-.mstage-wrap{height:calc(var(--vh) * 4.2); position:relative}
+.mstage-wrap{height:calc(var(--vh) * 2.4); position:relative}
 .mstage{position:sticky; top:0; height:var(--vh); overflow:hidden}
 .mstage::before{content:""; position:absolute; inset:0; background:radial-gradient(60% 55% at 58% 55%, color-mix(in srgb, var(--pa) 12%, transparent), transparent 70%); pointer-events:none}
 .mword{
@@ -281,7 +284,7 @@ a.r-paper:hover .go{color:var(--fg)}
 .r-paper b{display:block; color:var(--fg-2); font-weight:500; font-family:var(--sans); font-size:.95rem; letter-spacing:-.01em; margin-bottom:.3rem}
 @media (max-width:820px){ .r-intro{grid-template-columns:1fr} }
 
-.story{height:calc(var(--vh) * 9); position:relative}
+.story{height:calc(var(--vh) * 6.1); position:relative}
 .sstage{position:sticky; top:0; height:var(--vh); overflow:hidden}
 .sstage::before{content:""; position:absolute; inset:0; background:radial-gradient(55% 60% at 64% 50%, rgba(92,208,179,.07), transparent 70%); pointer-events:none}
 .scanvas{position:absolute; inset:0; z-index:1}

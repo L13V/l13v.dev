@@ -163,7 +163,7 @@
         e.preventDefault();
         /* still spinning after the last glide landed: that's another flick */
         if (!snapping && dir === lastDir && sum >= 380 && now - glideEnd > 160) flick(dir, now);
-        else lockUntil = Math.min(now + 170, glideEnd + 900);
+        else if (!snapping) lockUntil = Math.min(now + 170, glideEnd + 900);
         return;
       }
       if (sum >= 380) { e.preventDefault(); flick(dir, now); }
@@ -176,6 +176,7 @@
       lockUntil = now + 2000;
     }
     ["touchstart", "keydown"].forEach(function (t) { addEventListener(t, function () { if (Glide.kind() === "link") Glide.stop(); }, { passive: true }); });
+    window.__snapDbg = function () { return { pts: pts, hist: hist, lockUntil: lockUntil, kind: Glide.kind() }; }; /*DBG*/
     return { add: add, measure: measure, points: function () { return pts; } };
   })();
   /* an element's snap point: its top a little under the header */
@@ -1444,9 +1445,6 @@
   })();
 
   /* ── in-page links glide ── */
-  var glide = 0;
-  function stopGlide() { cancelAnimationFrame(glide); glide = 0; }
-  ["wheel", "touchstart", "keydown"].forEach(function (t) { addEventListener(t, stopGlide, { passive: true }); });
   document.addEventListener("click", function (e) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     var a = e.target.closest && e.target.closest('a[href^="#"]');
@@ -1455,17 +1453,9 @@
     var target = id ? document.getElementById(id) : document.body;
     if (!target) return;
     e.preventDefault();
-    stopGlide();
-    var padT = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
-    var from = window.scrollY, max = document.documentElement.scrollHeight - window.innerHeight;
-    var to = Math.max(0, Math.min(max, id && id !== "top" ? absTop(target) - (target.classList.contains("p-model") || target.classList.contains("p-research") ? 0 : padT) : 0));
-    var dist = Math.abs(to - from), dur = Math.min(1600, 500 + dist * 0.12), t0 = performance.now();
-    if (document.hidden) { window.scrollTo(0, to); return; }
-    (function step(now) {
-      var k = Math.min(1, (now - t0) / dur), ease = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
-      window.scrollTo({ top: from + (to - from) * ease, behavior: "instant" });
-      glide = k < 1 ? requestAnimationFrame(step) : 0;
-    })(t0);
+    var pinStart = target.classList.contains("p-model") || target.id === "top";
+    var to = !id || id === "top" ? 0 : absTop(target) - (pinStart ? 0 : target.classList.contains("p-research") ? 0 : NAV);
+    Glide.to(to, "link");
     if (id && location.hash !== "#" + id) history.pushState(null, "", "#" + id);
   });
 
@@ -1777,6 +1767,16 @@
       })
       .catch(function () {});
   }
+
+  /* the rest of the page's resting points */
+  Array.prototype.forEach.call(document.querySelectorAll("[data-snap]"), function (n) { Snap.add(snapTop(n)); });
+  Snap.add(snapTop(document.querySelector("#work .sec-title"), NAV + 40));
+  Snap.add(snapTop(document.querySelector("#stack .sec-title"), NAV + 40));
+  Snap.add(snapTop(document.getElementById("bench"), NAV + 180));
+  Snap.add(snapTop(document.querySelector(".outro"), 0));
+  Snap.add(function () { return document.documentElement.scrollHeight - innerHeight; });
+  /* measured last, once every scene has settled its layout */
+  Engine.add({ measure: function () { Snap.measure(); }, update: function () {} });
 
   Engine.measure();
 })();
