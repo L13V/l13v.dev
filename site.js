@@ -17,6 +17,8 @@
   function span(p, a, b) { return clamp01((p - a) / (b - a)); }
   function smooth(t) { return t * t * (3 - 2 * t); }
   function absTop(n) { return n.getBoundingClientRect().top + window.scrollY; }
+  /* the same, from layout alone, so a reveal's transform can't shift it */
+  function layTop(n) { var y = 0; while (n) { y += n.offsetTop; n = n.offsetParent; } return y; }
   function svg(t, attrs) { var n = document.createElementNS("http://www.w3.org/2000/svg", t); for (var k in attrs) n.setAttribute(k, attrs[k]); return n; }
   var ACCENTS = ["#ffc21a", "#5cd0b3", "#a3e635", "#a78bfa", "#ff5d6c", "#60a5fa", "#22d3ee"];
   function accentOf(p, i) { return p.accent || ACCENTS[i % ACCENTS.length]; }
@@ -35,7 +37,8 @@
       force = true;
     }
     function loop(now) {
-      var dt = t0 ? Math.min(0.05, (now - t0) / 1000) : 0.016; t0 = now;
+      /* capped, so coming back to a background tab doesn't jump a scene ahead */
+      var dt = t0 ? Math.min(0.1, (now - t0) / 1000) : 0.016; t0 = now;
       var y = window.scrollY;
       /* scroll speed in px/s, smoothed — scenes use it to play faster while you scroll */
       vel += ((y - lastY) / Math.max(dt, 0.008) - vel) * Math.min(1, dt * 10);
@@ -85,19 +88,23 @@
 
   /* How much faster a scene should play right now: 0 at rest, rising with
      scroll speed (about +3 at a screen per second), capped. */
-  function boost() { return Math.min(8, Math.abs(Engine.vel()) / Engine.vh() * 3); }
+  function boost() {
+    /* a glide is the page moving itself, not you scrolling: it shouldn't
+       fast-forward the scene it's carrying you to */
+    if (Glide.kind() || performance.now() - Glide.ended() < 250) return 0;
+    return Math.min(8, Math.abs(Engine.vel()) / Engine.vh() * 3);
+  }
 
   /* ============================================================================
-     Glide + snap. A slow scroll is always the browser's own. A flick — a fast
-     burst of wheel or trackpad movement — glides to the next important point
-     in that direction instead of flying past it, and the rest of that
-     flick's momentum is absorbed. On touch screens the browser's own scroll
-     snapping does the same job, against the same points.
+     Glide + snap. A flick — a fast burst of wheel or trackpad movement —
+     glides to the next important point in that direction instead of flying
+     past it. On touch screens the browser's own scroll snapping does the same
+     job, against the same points.
      ========================================================================= */
   var NAV = 64;
   var Glide = (function () {
-    var raf = 0, kind = null;
-    function stop() { cancelAnimationFrame(raf); raf = 0; kind = null; document.documentElement.classList.remove("gliding"); }
+    var raf = 0, kind = null, ended = 0;
+    function stop() { if (kind) ended = performance.now(); cancelAnimationFrame(raf); raf = 0; kind = null; document.documentElement.classList.remove("gliding"); }
     function to(y, k, onDone) {
       stop();
       var max = document.documentElement.scrollHeight - innerHeight;
@@ -114,7 +121,7 @@
         else { stop(); if (onDone) onDone(); }
       })(t0);
     }
-    return { to: to, stop: stop, kind: function () { return kind; } };
+    return { to: to, stop: stop, kind: function () { return kind; }, ended: function () { return ended; } };
   })();
 
   var Snap = (function () {
@@ -147,40 +154,72 @@
       }
       return null;
     }
-    /* wheel: watch the last ~130 ms; a fast burst is a flick */
-    var hist = [], lockUntil = 0, glideEnd = 0, lastDir = 0;
+    /* Wheel and trackpad input is handled here rather than by the browser,
+       so a flick can never carry past a resting point:
+       - an ordinary scroll moves the page by exactly what you scrolled,
+         eased over a few frames;
+       - a flick (a fast burst over ~130 ms) glides to the next resting point
+         after where that gesture began, and everything left in it —
+         including a trackpad's momentum tail — is absorbed;
+       - keep spinning after it lands and it steps on to the next point.
+       Keyboard, scrollbar and touch scrolling are left to the browser. */
+    var FLICK = 300;
+    var hist = [], lastEvt = 0, burstFrom = 0, lockUntil = 0, glideEnd = 0, lastDir = 0;
+    var target = 0, smoothing = false, lastSet = -1;
+    function maxY() { return document.documentElement.scrollHeight - innerHeight; }
     addEventListener("wheel", function (e) {
       if (e.ctrlKey || document.body.style.overflow === "hidden") return;
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
       var dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
       if (!dy) return;
+      e.preventDefault();
       var now = performance.now(), dir = dy > 0 ? 1 : -1;
       if (Glide.kind() === "link") Glide.stop();
+      /* a pause, or a change of direction, starts a new gesture */
+      if (now - lastEvt > 200 || dir !== lastDir) { hist = []; burstFrom = smoothing ? target : window.scrollY; }
+      lastEvt = now; lastDir = dir;
       hist.push([now, dy]);
       while (hist.length && now - hist[0][0] > 130) hist.shift();
-      var sum = 0; hist.forEach(function (h) { if ((h[1] > 0 ? 1 : -1) === dir) sum += Math.abs(h[1]); });
+      var sum = 0; hist.forEach(function (h) { sum += Math.abs(h[1]); });
       var snapping = Glide.kind() === "snap";
       if (snapping || now < lockUntil) {
-        e.preventDefault();
-        /* still spinning after the last glide landed: that's another flick */
-        if (!snapping && dir === lastDir && sum >= 380 && now - glideEnd > 160) flick(dir, now);
-        else if (!snapping) lockUntil = Math.min(now + 170, glideEnd + 900);
+        /* still inside a flick: absorb it — unless it's clearly a new,
+           sustained burst after the last glide landed */
+        if (!snapping && sum >= FLICK && now - glideEnd > 380) flick(dir, window.scrollY);
+        else if (!snapping) lockUntil = Math.min(now + 200, glideEnd + 1400);
         return;
       }
-      if (sum >= 380) { e.preventDefault(); flick(dir, now); }
+      if (sum >= FLICK) { flick(dir, burstFrom); return; }
+      if (!smoothing) { target = window.scrollY; smoothing = true; lastSet = -1; }
+      target = Math.max(0, Math.min(maxY(), target + dy));
     }, { passive: false });
-    function flick(dir, now) {
-      var to = next(window.scrollY, dir);
-      if (to == null) return;
-      lastDir = dir; hist = [];
-      Glide.to(to, "snap", function () { glideEnd = performance.now(); lockUntil = glideEnd + 170; });
-      lockUntil = now + 2000;
+    function flick(dir, from) {
+      smoothing = false;
+      var to = next(from, dir);
+      hist = [];
+      if (to == null) { to = dir > 0 ? maxY() : 0; }
+      Glide.to(to, "snap", function () { glideEnd = performance.now(); lockUntil = glideEnd + 200; });
+      lockUntil = performance.now() + 5000;
     }
+    /* ease the page toward the wheel's target */
+    Engine.add({ update: function (y, vh, dt) {
+      if (!smoothing) return;
+      if (Glide.kind()) { smoothing = false; return; }
+      /* someone else moved the page (scrollbar, keys): let go */
+      if (lastSet >= 0 && Math.abs(y - lastSet) > 3) { smoothing = false; return; }
+      var cur = lastSet >= 0 ? lastSet : y;
+      var gap = target - cur, step = gap * (1 - Math.exp(-dt * 14));
+      if (Math.abs(step) < 1) step = Math.sign(gap) * Math.min(1, Math.abs(gap));   /* never stall on sub-pixel steps */
+      var nxt = cur + step;
+      if (Math.abs(target - nxt) < 0.6) { nxt = target; smoothing = false; }
+      window.scrollTo({ top: nxt, behavior: "instant" });
+      lastSet = window.scrollY;
+    } });
     ["touchstart", "keydown"].forEach(function (t) { addEventListener(t, function () { if (Glide.kind() === "link") Glide.stop(); }, { passive: true }); });
-    window.__snapDbg = function () { return { pts: pts, hist: hist, lockUntil: lockUntil, kind: Glide.kind() }; }; /*DBG*/
     return { add: add, measure: measure, points: function () { return pts; } };
   })();
   /* an element's snap point: its top a little under the header */
-  function snapTop(n, off) { return function () { return n ? absTop(n) - (off == null ? NAV + 24 : off) : null; }; }
+  function snapTop(n, off) { return function () { return n ? layTop(n) - (off == null ? NAV + 24 : off) : null; }; }
 
   /* ============================================================================
      Signal field — a dot grid that radio pulses ripple across. The pointer
@@ -272,7 +311,9 @@
     nameEl.appendChild(ln);
   });
   nameEl.setAttribute("aria-label", SITE.name);
-  setTimeout(function () { nameEl.classList.add("done"); Array.prototype.forEach.call(nameEl.children, function (l) { l.style.overflow = "visible"; }); }, 2000);
+  setTimeout(function () {
+    document.querySelectorAll(".hero-meta").forEach(function (m) { m.style.animation = "none"; });
+    nameEl.classList.add("done"); Array.prototype.forEach.call(nameEl.children, function (l) { l.style.overflow = "visible"; }); }, 2000);
 
   var heroField = Field(document.getElementById("field"), { host: document.querySelector(".hero-pin") });
   var lean = { x: 0, y: 0, tx: 0, ty: 0 }, heroP = 0;
@@ -294,7 +335,7 @@
       c.n.style.transform = "translate3d(" + (c.x * e * 140) + "px," + (-e * (90 + c.f * 260)) + "px,0) rotate(" + (c.r * e) + "deg)";
       c.n.style.opacity = String(clamp01(1 - e * (1.1 + c.f)));
     });
-    heroMeta.forEach(function (m) { m.style.opacity = String(clamp01(1 - p * 3)); });
+    heroMeta.forEach(function (m) { m.style.opacity = String(clamp01(1 - p * 2.5)); });
     heroField.fade(1 - p * 0.7);
   }, 14);
 
@@ -329,8 +370,8 @@
     Engine.add({
       measure: function () { top = absTop(stmtSec); },
       update: function (y, vh, dt) {
-        if (y < top - vh * 0.45) lit = 0;
-        else if (lit < words.length) lit = Math.min(words.length, lit + dt * 3.2 * (1 + boost()));
+        if (y < top - vh * 0.32) lit = 0;
+        else if (lit < words.length) lit = Math.min(words.length, lit + dt * 16 * (1 + boost()));
         var n = Math.floor(lit);
         if (n === shown) return;
         shown = n;
@@ -452,7 +493,6 @@
   function ico(html, cls) { var s = el("span", "ico" + (cls ? " " + cls : "")); if (html) s.innerHTML = html; return s; }
 
   /* ── index of work ── */
-  var peek = document.getElementById("peek"), peekX = 0, peekY = 0, peekTX = 0, peekTY = 0, peekOn = false;
   PROJECTS.forEach(function (p, i) {
     ACC[p.slug] = accentOf(p, i);
     TITLES[p.slug] = p.name ? p.name + " – " + p.title : p.title;
@@ -466,24 +506,7 @@
     a.appendChild(el("span", "ix-y", p.period));
     a.appendChild(el("span", "ix-ar", "→"));
     li.appendChild(a); indexList.appendChild(li);
-    a.addEventListener("pointerenter", function () {
-      if (!fine) return;
-      peek.textContent = ""; peek.style.setProperty("--pa", ACC[p.slug]);
-      var thumbFile = p.slug === "2026_59" ? "rico-poster.webp" : p.media && p.media[0] && p.media[0].type === "image" ? p.media[0].file : null;
-      if (thumbFile) { var im = el("img"); im.src = src(p.slug, thumbFile); im.alt = ""; if (/\.svg$/.test(thumbFile) || p.slug === "2026_59") im.className = "contain"; peek.appendChild(im); }
-      else peek.appendChild(el("div", "tile", pad(i + 1)));
-      peekOn = true; peek.classList.add("on");
-    });
-    a.addEventListener("pointerleave", function () { peekOn = false; peek.classList.remove("on"); });
   });
-  if (fine) {
-    addEventListener("pointermove", function (e) { peekTX = e.clientX + 30; peekTY = e.clientY; });
-    Engine.add({ update: function () {
-      if (!peekOn && !peek.classList.contains("on")) return;
-      peekX += (peekTX - peekX) * 0.16; peekY += (peekTY - peekY) * 0.16;
-      peek.style.transform = "translate3d(" + peekX + "px," + (peekY - peek.offsetHeight / 2) + "px,0) scale(" + (peekOn ? 1 : 0.85) + ")";
-    } });
-  }
 
   PROJECTS.forEach(function (p, i) {
     if (p.stage === "model") buildModelStage(p, i);
@@ -684,31 +707,38 @@
 
     /* the scene follows the scroll; labels follow the scene */
     var scene = null, P = 0;
-    /* labels sit up and to the right of their point, but never off screen */
-    function place(l, pt, on) {
-      l.classList.toggle("on", !!on);
+    /* Labels sit up and to the right of their point, but never off screen.
+       This runs every frame, so it never reads layout: each label's width is
+       measured once, and only changed values are written. */
+    function setText(n, t) { if (n.textContent !== t) { n.textContent = t; n._w = null; } }
+    function place(l, pt, on, W) {
+      on = !!on;
+      if (l._on !== on) { l._on = on; l.classList.toggle("on", on); }
       if (!on) return;
-      var w = l.offsetWidth, x = pt.x + 12;
-      if (x + w > cv.clientWidth - 8) x = pt.x - 12 - w;
-      l.style.transform = "translate3d(" + Math.round(Math.max(8, x)) + "px," + Math.round(pt.y - 26) + "px,0)";
+      if (l._w == null) l._w = l.offsetWidth;
+      var x = pt.x + 12;
+      if (x + l._w > W - 8) x = pt.x - 12 - l._w;
+      var tf = "translate3d(" + Math.round(Math.max(8, x)) + "px," + Math.round(pt.y - 26) + "px,0)";
+      if (l._tf !== tf) { l._tf = tf; l.style.transform = tf; }
     }
+    function toggle(n, c, v) { v = !!v; if (n["_" + c] !== v) { n["_" + c] = v; n.classList.toggle(c, v); } }
     if (D) near(story, function () {
       when3D(function () {
         try {
           scene = window.__mountUWB(cv, {
             base: "media/uwb/", data: D, colors: COLS,
             onFrame: function (o) {
-              o.anchors.forEach(function (a, k) { place(aLabels[k], a, a.on); });
-              place(tagLabel, o.tag, P > 0.31 && P < 0.97);
-              place(estLabel, o.est, o.est.on);
-              place(blockLabel, o.block, o.block.on);
-              place(candLabel, o.cand, o.cand.on);
-              if (o.cand.on) { candLabel.textContent = "LM step " + o.step + " / " + o.steps; hSolve.b.textContent = "step " + o.step + " of " + o.steps; }
-              rngB[2].textContent = (trueD[2] + (hit.bias / 100) * o.inflate).toFixed(3) + " m";
-              rngB[2].classList.toggle("bad", o.inflate > 0.05);
-              var err = lerp(base.rmse, hit.rmse, o.drift);
-              hErr.b.textContent = err.toFixed(1) + " cm";
-              hErr.r.classList.toggle("bad", o.drift > 0.05);
+              var W = o.w;
+              if (o.cand.on) { setText(candLabel, "LM step " + o.step + " / " + o.steps); setText(hSolve.b, "step " + o.step + " of " + o.steps); }
+              o.anchors.forEach(function (a, k) { place(aLabels[k], a, a.on, W); });
+              place(tagLabel, o.tag, P > 0.31 && P < 0.97, W);
+              place(estLabel, o.est, o.est.on, W);
+              place(blockLabel, o.block, o.block.on, W);
+              place(candLabel, o.cand, o.cand.on, W);
+              setText(rngB[2], (trueD[2] + (hit.bias / 100) * o.inflate).toFixed(3) + " m");
+              toggle(rngB[2], "bad", o.inflate > 0.05);
+              setText(hErr.b, lerp(base.rmse, hit.rmse, o.drift).toFixed(1) + " cm");
+              toggle(hErr.r, "bad", o.drift > 0.05);
             }
           });
           scene.setProgress(P);
@@ -725,13 +755,16 @@
     function render(q) {
       if (scene) scene.setProgress(q);
       chapEls.forEach(function (c, k) {
-        c.classList.toggle("on", q >= RANGES[k][0] && q < RANGES[k][1]);
-        c.classList.toggle("past", q >= RANGES[k][1]);
+        toggle(c, "on", q >= RANGES[k][0] && q < RANGES[k][1]);
+        toggle(c, "past", q >= RANGES[k][1]);
       });
-      railB.forEach(function (b, k) { b.style.transform = "scaleX(" + span(q, RANGES[k][0], RANGES[k][1] - 0.003) + ")"; });
-      hud.classList.toggle("on", q > 0.4);
-      hSolve.r.style.display = q > 0.62 && q < 0.8 ? "" : "none";
-      if (q < 0.62) hSolve.b.textContent = "—";
+      railB.forEach(function (b, k) {
+        var tf = "scaleX(" + span(q, RANGES[k][0], RANGES[k][1] - 0.003).toFixed(3) + ")";
+        if (b._tf !== tf) { b._tf = tf; b.style.transform = tf; }
+      });
+      toggle(hud, "on", q > 0.4);
+      toggle(hSolve.r, "gone", !(q > 0.62 && q < 0.8));
+      if (q < 0.62) setText(hSolve.b, "—");
     }
     Engine.add({
       measure: function (vh) { stTop = absTop(story); stLen = Math.max(1, story.offsetHeight - vh); },

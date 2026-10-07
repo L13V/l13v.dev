@@ -73,7 +73,7 @@ button{font:inherit; color:inherit}
 @media (max-width:560px){ .pill a{padding:.4rem .62rem; font-size:.78rem} .pill a.ext{display:none} }
 
 /* ── hero ─────────────────────────────────────── */
-.hero{height:calc(var(--vh) * 1.7); position:relative}
+.hero{height:calc(var(--vh) * 1.35); position:relative}
 .hero-pin{position:sticky; top:0; height:var(--vh); overflow:hidden; display:grid; place-items:center}
 .field{position:absolute; inset:0; width:100%; height:100%}
 .hero-pin::after{content:""; position:absolute; inset:auto 0 0 0; height:30%; background:linear-gradient(180deg,transparent,var(--bg)); pointer-events:none}
@@ -99,13 +99,15 @@ button{font:inherit; color:inherit}
 @keyframes cue{to{top:100%}}
 
 /* ── statement ────────────────────────────────── */
-.statement{height:calc(var(--vh) * 1.9); position:relative}
+/* pulled up under the hero, so the statement rises in while the name scatters — no dead air between them */
+.statement{height:calc(var(--vh) * 1.6); margin-top:calc(var(--vh) * -0.55); position:relative}
 .statement-pin{position:sticky; top:0; height:var(--vh); display:flex; align-items:center}
 .stmt{
   margin:0; font-size:clamp(2rem,5.6vw,5.4rem); line-height:1.04; letter-spacing:-.038em; font-weight:500;
   max-width:17ch; text-wrap:balance;
 }
-.stmt .w{color:var(--fg-4); transition:color .35s ease}
+.stmt .w{color:var(--fg-4); display:inline-block; transform:translateY(.12em); transition:color .45s ease, transform .6s var(--ease)}
+.stmt .w.on{transform:none}
 .stmt .w.on{color:var(--fg)}
 .stmt .w.hl{font-family:var(--serif); font-style:italic; font-weight:400; letter-spacing:-.01em}
 .stmt .w.hl.on{color:var(--brand-2)}
@@ -155,19 +157,6 @@ button{font:inherit; color:inherit}
   .index a{grid-template-columns:2.6rem minmax(0,1fr) 1.2rem}
   .ix-k,.ix-y{display:none}
 }
-/* the preview that follows the pointer over the index */
-.peek{
-  position:fixed; z-index:250; left:0; top:0; width:min(26vw,340px); aspect-ratio:4/3; pointer-events:none;
-  border-radius:12px; overflow:hidden; background:var(--bg-3); border:1px solid var(--line-2);
-  opacity:0; transform:translate3d(-50%,-50%,0) scale(.85); transition:opacity .3s ease, transform .4s var(--ease);
-  box-shadow:0 30px 80px -30px rgba(0,0,0,.9);
-}
-.peek.on{opacity:1}
-.peek img{width:100%; height:100%; object-fit:cover}
-.peek img.contain{object-fit:contain; padding:14px}
-.peek .tile{position:absolute; inset:0; display:grid; place-items:center; font-family:var(--mono); font-size:3.2rem; font-weight:600; color:var(--pa);
-  background:radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--pa) 30%, transparent), transparent 65%), var(--bg-3)}
-@media (hover:none),(max-width:760px){ .peek{display:none} }
 
 /* ── project chrome shared by every layout ───── */
 .meta{display:flex; gap:.6rem 1rem; align-items:center; flex-wrap:wrap}
@@ -320,6 +309,7 @@ a.r-paper:hover .go{color:var(--fg)}
   opacity:0; transform:translateY(12px); transition:opacity .5s, transform .6s var(--ease);
 }
 .hud.on{opacity:1; transform:none}
+.hud .gone{display:none}
 .hud > div{display:flex; flex-direction:column; gap:.15rem; padding:.6rem .85rem; border-left:1px solid var(--line)}
 .hud > div:first-child{border-left:0}
 .hud span{font-size:.58rem; letter-spacing:.1em; color:var(--fg-3); white-space:nowrap}

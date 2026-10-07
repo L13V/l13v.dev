@@ -62,25 +62,41 @@ for how models are exported and compressed.
 ## How the page moves
 
 One scroll engine (`Engine` in `site.js`) runs a single animation-frame loop.
-Each scene is a tall section with a `position: sticky` stage inside; while the
-stage is pinned the engine reports a 0→1 progress, eased so a mouse wheel's
-steps still glide. Nothing hijacks the scroll — it's always the browser's own.
+Scenes are tall sections with a `position: sticky` stage inside. The rule
+throughout: **animations play on their own, scrolling speeds them up, and
+nothing moves on until you scroll.**
 
+- **Flicks snap.** Wheel and trackpad input is handled by the page: an
+  ordinary scroll moves exactly as far as you scrolled, eased over a few
+  frames, while a flick — a fast burst — glides to the next resting point
+  after where that gesture began (each section, each research chapter, each
+  results panel, each card) and absorbs the rest of its momentum, so you can't
+  fly past a scene. Keep spinning and it steps on point by point. Keyboard and
+  scrollbar stay native. On touch screens the browser's own scroll snapping
+  (`proximity`, `scroll-snap-stop: always`) uses the same points. Points are
+  registered with `Snap.add(...)` in `site.js`.
 - **Hero** — the name rises in, then scatters letter by letter as you scroll
   away, over a dot field that radio pulses ripple across (click to send one).
-- **Statement** — the intro lights up one word at a time.
-- **01 · Rico** (`stage: "model"`) — the scroll turns the robot through a full
-  orbit while the `highlights` come in around it. A drag nudges it and it
-  springs back; **Explore in 3D** opens the free-orbit viewer.
+- **Statement** — rises in underneath the scattering name and lights up in
+  about a second, faster while you scroll; it starts over if you go back up.
+- **01 · Rico** (`stage: "model"`) — turns on its own like a turntable while
+  the `highlights` take turns; scrolling spins it faster (backwards if you
+  scroll up). A drag nudges it; **Explore in 3D** opens the free-orbit viewer.
 - **02 · UWB** (`stage: "research"`) — a six-chapter 3D story: the node, the
   bench scanned in, pulses to the anchors, range spheres, the least-squares
   solver stepping in (the real Levenberg–Marquardt iterates), then a concrete
   block that inflates A2's sphere and drags the estimate — and the real logged
-  fixes with it. Below it, the charts, the anchor grid and a trial replay are
-  all computed from `media/uwb/trials.js`.
+  fixes with it. Where you've scrolled picks the chapter; the chapter plays
+  slowly (7–10 s) and holds on its last frame until you scroll on. Scrolling
+  speeds it up; scrolling back rewinds. Below it, the charts, the anchor grid
+  and a trial replay are all computed from `media/uwb/trials.js`.
 - **The rest** — a deck of cards that stack as you scroll, each with a small
   animation true to the project (or its first picture).
-- **Stack** — capability rows that slide across as you pass them.
+- **Stack** — capability rows that drift on their own and get a push when
+  you scroll.
+
+A glide (a flick landing, or an in-page link) never counts as scrolling, so
+it doesn't fast-forward the scene it carries you to.
 
 Each project's accent is its own `accent:` in `projects.js`.
 

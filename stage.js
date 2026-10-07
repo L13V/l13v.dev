@@ -885,7 +885,7 @@ window.__mountUWB = function (host, opts) {
     out.cand = project(cand.position); out.cand.on = walking && cand.material.opacity > 0.5;
     out.step = walking ? Math.min(iters.length - 1, k + (f > 0.5 ? 1 : 0)) : 0;
     out.steps = iters.length - 1;
-    out.inflate = inflate; out.drift = drift;
+    out.inflate = inflate; out.drift = drift; out.w = W_;
   }
 
   let raf = 0, visible = false;
