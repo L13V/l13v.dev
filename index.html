@@ -38,7 +38,7 @@
 }
 
 *,*::before,*::after{box-sizing:border-box}
-html{height:100%; scroll-behavior:smooth; scroll-padding-top:84px}
+html{height:100%; scroll-padding-top:84px}
 body{
   margin:0; min-height:100%; background:var(--bg); color:var(--fg);
   font-family:var(--sans); font-size:1.02rem; line-height:1.62;
@@ -1091,6 +1091,39 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   STACK.forEach(function (row) { var d = el("div"); d.appendChild(el("dt", null, row[0])); d.appendChild(el("dd", null, row[1])); cap.appendChild(d); });
   var bench = document.getElementById("bench");
   BENCH.forEach(function (row) { var d = el("div", "bcard"); d.appendChild(el("h3", null, row[0])); d.appendChild(el("p", null, row[1])); bench.appendChild(d); });
+
+  /* ── in-page links glide ──
+     CSS scroll-behavior is dropped by the browser under reduced motion, and
+     this site keeps its motion regardless, so animate the scroll by hand. */
+  var glide = 0;
+  function stopGlide() { cancelAnimationFrame(glide); glide = 0; }
+  ["wheel", "touchstart", "keydown"].forEach(function (t) { addEventListener(t, stopGlide, { passive: true }); });
+  document.addEventListener("click", function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var id = a.getAttribute("href").slice(1);
+    var target = id ? document.getElementById(id) : document.body;
+    if (!target) return;
+    e.preventDefault();
+    stopGlide();
+    var pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    var from = window.scrollY;
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    var to = Math.max(0, Math.min(max, id ? target.getBoundingClientRect().top + from - pad : 0));
+    if (document.hidden) window.scrollTo({ top: to, behavior: "instant" });
+    var dist = Math.abs(to - from);
+    var dur = Math.min(1100, 380 + dist * 0.18);
+    var t0 = performance.now();
+    function step(now) {
+      var k = Math.min(1, (now - t0) / dur);
+      var ease = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      window.scrollTo({ top: from + (to - from) * ease, behavior: "instant" });
+      glide = k < 1 ? requestAnimationFrame(step) : 0;
+    }
+    if (!document.hidden) glide = requestAnimationFrame(step);
+    if (id && location.hash !== "#" + id) history.pushState(null, "", "#" + id);
+  });
 
   /* ── scroll progress ── */
   var bar = document.getElementById("bar");
