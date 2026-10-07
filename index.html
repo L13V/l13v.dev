@@ -58,35 +58,26 @@ a{color:inherit}
 #bar{position:fixed; top:0; left:0; height:2px; width:0; z-index:400; background:var(--grad); box-shadow:0 0 12px rgba(77,140,255,.7)}
 
 /* ── header ──────────────────────────────────── */
-header{
-  position:sticky; top:0; z-index:300;
+/* Over the hero there is no bar: just the nav links floating on the gradient.
+   Once the hero has scrolled away the bar (backdrop, rule, name, role) fades
+   in behind them. */
+header{position:fixed; top:0; left:0; right:0; z-index:300; border-bottom:1px solid transparent; transition:border-color .4s ease}
+header::before{
+  content:""; position:absolute; inset:0; z-index:-1; opacity:0; transition:opacity .4s ease;
   background:color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter:blur(14px) saturate(140%); -webkit-backdrop-filter:blur(14px) saturate(140%);
-  border-bottom:1px solid var(--line);
 }
+header.bar{border-bottom-color:var(--line)}
+header.bar::before{opacity:1}
 .hd{display:flex; align-items:center; gap:.4rem 1rem; min-height:60px; flex-wrap:wrap}
-.hd-lead{
-  display:flex; align-items:center; gap:.6rem; min-width:0;
-  /* At the top the big heading is the name, so the bar's name block takes no
-     room at all; it opens up (dot, name, divider) once that heading is gone. */
-  max-width:0; overflow:hidden; opacity:0;
-  transition:max-width .45s cubic-bezier(.2,.7,.2,1), opacity .3s ease;
-}
-header.named .hd-lead{max-width:16rem; opacity:1}
-.hd-name{
-  font-weight:700; letter-spacing:-.02em; font-size:.98rem; margin:0; white-space:nowrap;
-  /* Hand-off: while the big heading is on screen this is hidden, and it eases
-     in only once that heading has scrolled up behind the bar. The two are
-     never visible at the same time. */
-  opacity:0; transform:translateY(-7px);
-  transition:opacity .4s ease, transform .4s ease;
-}
-header.named .hd-name{opacity:1; transform:none}
+.hd-lead,.hd-role{opacity:0; visibility:hidden; transform:translateY(-6px); transition:opacity .4s ease, transform .4s ease, visibility 0s .4s}
+header.bar .hd-lead,header.bar .hd-role{opacity:1; visibility:visible; transform:none; transition:opacity .4s ease, transform .4s ease}
+.hd-lead{display:flex; align-items:center; gap:.6rem; min-width:0}
+.hd-name{font-weight:700; letter-spacing:-.02em; font-size:.98rem; margin:0; white-space:nowrap}
 .hd-name em{font-style:normal; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
 .dot{width:7px; height:7px; border-radius:50%; background:var(--a-lime); box-shadow:0 0 0 0 rgba(163,230,53,.6); animation:ping 2.4s ease-out infinite; flex:none}
 @keyframes ping{0%{box-shadow:0 0 0 0 rgba(163,230,53,.55)}70%{box-shadow:0 0 0 9px rgba(163,230,53,0)}100%{box-shadow:0 0 0 0 rgba(163,230,53,0)}}
-.hd-role{font-family:var(--mono); font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-3); margin-left:-1rem; padding-left:0; border-left:1px solid transparent; transition:margin .45s cubic-bezier(.2,.7,.2,1), padding .45s cubic-bezier(.2,.7,.2,1), border-color .3s ease}
-header.named .hd-role{margin-left:0; padding-left:1rem; border-left-color:var(--line)}
+.hd-role{font-family:var(--mono); font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-3); padding-left:1rem; border-left:1px solid var(--line)}
 .hd nav{margin-left:auto; display:flex; gap:1.4rem; flex-wrap:wrap}
 .hd nav a{font-family:var(--mono); font-size:.68rem; letter-spacing:.11em; text-transform:uppercase; color:var(--fg-2); text-decoration:none; position:relative; padding-block:.3rem}
 .hd nav a::after{content:""; position:absolute; left:0; right:100%; bottom:0; height:1.5px; background:var(--grad); transition:right .32s cubic-bezier(.2,.7,.2,1)}
@@ -94,7 +85,8 @@ header.named .hd-role{margin-left:0; padding-left:1rem; border-left-color:var(--
 .hd nav a:hover::after{right:0}
 
 /* ── hero ────────────────────────────────────── */
-.hero{position:relative; padding-block:clamp(1.6rem,3.5vw,2.8rem) clamp(1.4rem,3.5vw,2.4rem); overflow:hidden}
+/* the header floats over the hero, so clear its 60px */
+.hero{position:relative; padding-block:calc(60px + clamp(1.6rem,3.5vw,2.8rem)) clamp(1.4rem,3.5vw,2.4rem); overflow:hidden}
 .glow{
   position:absolute; inset:-30% -15% auto -15%; height:700px; z-index:0; pointer-events:none;
   background:
@@ -1107,17 +1099,16 @@ footer{border-top:1px solid var(--line); margin-top:clamp(2rem,5vw,3.5rem)}
   /* ── scroll progress ── */
   var bar = document.getElementById("bar");
   var header = document.querySelector("header");
-  var bigName = document.getElementById("h1");
+  var hero = document.querySelector(".hero");
   function prog() {
     var h = document.documentElement.scrollHeight - window.innerHeight;
     bar.style.width = (h > 0 ? (window.scrollY / h) * 100 : 0) + "%";
-    /* Hand off only once the big heading has actually gone up behind the bar,
-       measured rather than guessed at a pixel offset — so the two are never
-       both on screen at any window size. */
-    var gone = bigName
-      ? bigName.getBoundingClientRect().bottom < header.offsetHeight - 2
-      : window.scrollY > 140;
-    header.classList.toggle("named", gone);
+    /* The bar appears only once the whole hero (the gradient block) has
+       gone up behind it, measured rather than guessed at a pixel offset. */
+    var gone = hero
+      ? hero.getBoundingClientRect().bottom < header.offsetHeight
+      : window.scrollY > 400;
+    header.classList.toggle("bar", gone);
   }
   addEventListener("scroll", prog, { passive: true });
   addEventListener("resize", prog);
