@@ -32,6 +32,7 @@
     function add(it) { items.push(it); if (it.measure) it.measure(vh); force = true; return it; }
     function measure() {
       vh = innerHeight;
+      document.documentElement.style.setProperty("--vh", vh + "px");
       document.documentElement.style.setProperty("--vh-px", vh + "px");
       items.forEach(function (it) { if (it.measure) it.measure(vh); });
       force = true;
@@ -144,7 +145,7 @@
       if (touch) {
         if (!marks) { marks = el("div"); marks.setAttribute("aria-hidden", "true"); document.body.appendChild(marks); }
         marks.textContent = "";
-        pts.forEach(function (y) { var m = el("i", "snapmark"); m.style.top = (y + NAV) + "px"; marks.appendChild(m); });
+        pts.forEach(function (y) { var m = el("i", "snapmark"); m.style.top = y + "px"; marks.appendChild(m); });
       }
     }
     function next(from, dir) {
@@ -312,7 +313,7 @@
   });
   nameEl.setAttribute("aria-label", SITE.name);
   setTimeout(function () {
-    document.querySelectorAll(".hero-meta").forEach(function (m) { m.style.animation = "none"; });
+    document.querySelectorAll(".hero-meta").forEach(function (m) { m.style.opacity = "1"; m.style.animation = "none"; });
     nameEl.classList.add("done"); Array.prototype.forEach.call(nameEl.children, function (l) { l.style.overflow = "visible"; }); }, 2000);
 
   var heroField = Field(document.getElementById("field"), { host: document.querySelector(".hero-pin") });
@@ -573,7 +574,7 @@
 
     var view = null, ww = 0;
     if (model) near(s, function () {
-      mount3D(host, src(p.slug, model.file), Object.assign(optsOf(model), { scrub: true, margin: innerWidth > 900 ? 1.7 : 1.1 }), function (h) { view = h; if (view) view.setView(last); });
+      mount3D(host, src(p.slug, model.file), Object.assign(optsOf(model), { scrub: true, manipulate: fine, margin: innerWidth > 900 ? 1.7 : 1.1 }), function (h) { view = h; if (view) view.setView(last); });
     });
     /* The robot rotates in sync with the scroll through a full 360°,
        and the highlights follow along. Dragging nudges the orbit; letting go
@@ -1887,6 +1888,8 @@
   var tx = 0, ty = 0;
   lb.addEventListener("touchstart", function (e) { tx = e.changedTouches[0].clientX; ty = e.changedTouches[0].clientY; }, { passive: true });
   lb.addEventListener("touchend", function (e) {
+    if (list[at] && list[at].m && list[at].m.type === "model") return;
+    if (e.target && e.target.tagName === "CANVAS") return;
     var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
     if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1);
   }, { passive: true });

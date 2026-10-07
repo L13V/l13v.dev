@@ -211,8 +211,10 @@ window.__mount3D = function (host, url, opts) {
   const nudge = { v: 0, held: false, x: 0, base: 0, w: 0, t: 0 };
   const offHost = [];
   const listen = (t, type, fn, o) => { t.addEventListener(type, fn, o); offHost.push(() => t.removeEventListener(type, fn, o)); };
-  if (scrub) {
+  const canManipulate = opts.manipulate !== false && scrub && (typeof window === "undefined" || !window.matchMedia || window.matchMedia("(hover:hover) and (pointer:fine)").matches);
+  if (canManipulate) {
     listen(canvas, "pointerdown", (e) => {
+      if (e.pointerType === "touch") return;
       nudge.held = true; nudge.x = e.clientX; nudge.base = nudge.v; nudge.w = 0; nudge.t = performance.now();
       canvas.setPointerCapture(e.pointerId); host.classList.add("held");
     });
