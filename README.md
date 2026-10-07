@@ -2,12 +2,17 @@
 
 Personal site for [@L13V](https://github.com/L13V) — robotics software and infrastructure.
 
-No build step, no dependencies, no framework. Open `index.html` and it works.
+No build step, no framework. three.js comes from a CDN for the 3D; everything
+else is plain files. Serve the folder (`python -m http.server`) to work on it —
+straight from disk the page reads fine but browsers won't load the 3D.
 
 ```
-index.html     the page — styles, layout, behaviour
+index.html     the page skeleton
+site.css       every style; colours are tokens on :root
+site.js        builds the page from projects.js; the scroll engine and every scene
+stage.js       three.js: the CAD viewer and the research story (an ES module)
 projects.js    ALL the content. This is the file you edit.
-media/         photos, video and diagrams — one folder per project
+media/         photos, video, models and data — one folder per project
 CNAME          points Pages at l13v.dev
 .nojekyll      stops GitHub running the files through Jekyll
 ```
@@ -34,13 +39,6 @@ The first item in a list is that project's lead image. Thumbnails, the
 click-to-enlarge viewer, captions, figure numbers and arrow-key/swipe navigation
 are all automatic. See [`media/README.md`](media/README.md) for size guidance.
 
-### Placeholders
-
-Each project has a `placeholders:` count — how many empty plates to reserve, so
-the layout reads correctly before the photos exist. Once yours are in, set
-`SHOW_PLACEHOLDERS = false` at the top of `projects.js` and every remaining
-placeholder disappears at once.
-
 ## The viewer
 
 | | |
@@ -55,32 +53,39 @@ Images, self-hosted video, YouTube and live 3D models all open in the same
 viewer. Video, YouTube and WebGL contexts are destroyed on close, so audio stops
 when you'd expect and a model doesn't keep a GPU context alive behind you.
 
-A `mdl()` plate is interactive in place — drag to orbit, scroll to zoom — with
-an **Expand** button for the full-screen view. Its WebGL context is built only
-when the plate nears the screen, with a timed fallback in case intersection
-callbacks never arrive. See [`media/README.md`](media/README.md) for how the
-model is exported and compressed.
+Rico's model lives in its scroll stage; **Explore in 3D** opens the same model
+in the viewer with free orbit and zoom. Transparent CAD renders can carry a
+backdrop colour — `img("part.webp", "Caption", { bg: "#e4e4e6" })` — so dark
+parts don't vanish on the black viewer. See [`media/README.md`](media/README.md)
+for how models are exported and compressed.
 
-## Design notes
+## How the page moves
 
-One identity, dark only — deliberately, not by omission. Every colour is set
-explicitly, so the page doesn't depend on the visitor's theme.
+One scroll engine (`Engine` in `site.js`) runs a single animation-frame loop.
+Each scene is a tall section with a `position: sticky` stage inside; while the
+stage is pinned the engine reports a 0→1 progress, eased so a mouse wheel's
+steps still glide. Nothing hijacks the scroll — it's always the browser's own.
 
-Each project carries its own accent from a fixed set of six (`--a-red`,
-`--a-cyan`, `--a-lime`, `--a-violet`, `--a-amber`, `--a-blue`) applied through a
-single `--pa` custom property. That's what colours the section rule, the figure
-numbers, the status chip, the note numbers and the hover states. To recolour a
-project, change its position in the list or edit the `ACCENTS` array.
+- **Hero** — the name rises in, then scatters letter by letter as you scroll
+  away, over a dot field that radio pulses ripple across (click to send one).
+- **Statement** — the intro lights up one word at a time.
+- **01 · Rico** (`stage: "model"`) — the scroll turns the robot through a full
+  orbit while the `highlights` come in around it. A drag nudges it and it
+  springs back; **Explore in 3D** opens the free-orbit viewer.
+- **02 · UWB** (`stage: "research"`) — a six-chapter 3D story: the node, the
+  bench scanned in, pulses to the anchors, range spheres, the least-squares
+  solver stepping in (the real Levenberg–Marquardt iterates), then a concrete
+  block that inflates A2's sphere and drags the estimate — and the real logged
+  fixes with it. Below it, the charts, the anchor grid and a trial replay are
+  all computed from `media/uwb/trials.js`.
+- **The rest** — a deck of cards that stack as you scroll, each with a small
+  animation true to the project (or its first picture).
+- **Stack** — capability rows that slide across as you pass them.
 
-Motion is deliberate and all of it respects `prefers-reduced-motion`:
+Each project's accent is its own `accent:` in `projects.js`.
 
-- the hero fades up in sequence on load
-- sections rise in as you reach them, with a 3-second failsafe that reveals
-  everything in case an observer never fires — a reveal animation must never be
-  the reason something is unreadable
-- a scroll-progress bar across the top
-- the tech ticker scrolls and pauses on hover; with reduced motion it becomes a
-  static wrapped list
+WebGL is only created once its section is near the screen, and every canvas
+stops drawing while it's off screen.
 
 ## Live data
 

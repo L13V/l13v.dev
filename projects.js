@@ -11,7 +11,8 @@
         vid("auto.mp4",        "Three-piece auto", "auto-poster.jpg")
         yt ("dQw4w9WgXcQ",     "Qualification match 42")
 
-   The first item becomes the project's lead image.
+   The first item becomes the project's lead image. A transparent render can
+   ask for a backdrop: img("part.webp", "Caption", { bg: "#e7e7e9" }).
 
    SHOWING CODE
    ------------
@@ -19,10 +20,18 @@
    is a real file and line range, fetched from GitHub at the pinned commit, so
    the line numbers always match what the "on GitHub" link opens. To move to
    newer code, change `ref` and re-check the line ranges.
+
+   HOW A PROJECT IS LAID OUT
+   -------------------------
+   `stage: "model"`     a pinned 3D scene the scroll turns, with `highlights`
+                        coming in around it (Rico).
+   `stage: "research"`  the full research story: a scroll-driven 3D chapter
+                        sequence, then charts built from the trial data (UWB).
+   anything else        a card in the stack further down the page.
    ========================================================================= */
 
 /* helpers — leave these alone */
-const img = (file, caption) => ({ type: "image", file, caption });
+const img = (file, caption, opts) => Object.assign({ type: "image", file, caption }, opts || {});
 const vid = (file, caption, poster) => ({ type: "video", file, caption, poster });
 const yt = (id, caption, opts) => Object.assign({ type: "youtube", id, caption }, opts || {});
 /* mdl() is a live 3D model (.glb) you can orbit. Models are lit exactly the way
@@ -42,23 +51,24 @@ const SITE = {
   handle: "L13V",
   role: "Robotics software & infrastructure",
   location: "",
-  /* The opening statement — the first thing anyone reads, set large. */
+  /* The opening statement. It lights up word by word as you scroll; the
+     `highlight` phrase is set in the italic accent. */
   intro:
     "I write the software that makes physical things move, then build the " +
     "infrastructure that keeps it running.",
-  /* A phrase from `intro` to pick out in the accent gradient. The surname in
-     the big heading already carries the gradient, so this is off by default —
-     set it to a phrase from `intro` above if you want it back. */
-  highlight: "",
+  highlight: "physical things move",
   intro2:
-    "Competition robots in Java. A Linux image that boots straight into a TV " +
-    "dashboard. DNS that manages itself. A swarm of drones that fly on cue. " +
+    "Competition robots in Java. Radio localization for lunar rovers. A Linux " +
+    "image that boots straight into a TV dashboard. DNS that manages itself. " +
     "Most of it ends with something happening in a room.",
   links: [
     { label: "GitHub", href: "https://github.com/L13V" },
     { label: "dorfman.net", href: "https://dorfman.net" },
   ],
 };
+
+/* CAD renders are transparent PNGs; they read best on the light grey they were rendered against */
+const CAD = { bg: "#e4e4e6" };
 
 const PROJECTS = [
   {
@@ -69,12 +79,20 @@ const PROJECTS = [
     kind: "Robot code",
     period: "2026",
     status: "In season",
-    lead: true,                 /* gets the big plate at the top of the page */
+    stage: "model",
+    accent: "#ffc21a",
     logo: "rico-logo.webp",     /* optional, from media/<slug>/ — leads the heading */
     summary:
       "Swerve drive and a turreted shooter that keeps firing while the robot " +
       "moves. Written against AdvantageKit's IO pattern, so every subsystem has " +
       "a simulated twin and every match replays from its log.",
+    /* Called out around the robot as the scroll turns it. Keep to four. */
+    highlights: [
+      ["Swerve drive", "Four independently steered modules."],
+      ["Shoots on the move", "The robot's own velocity is taken out of every shot."],
+      ["Turret · hood · flywheel", "Drag-corrected launch speed, clamped to what the motor can hold."],
+      ["A simulated twin", "Every subsystem sits behind an IO layer; every match replays from its log."],
+    ],
     specs: [
       ["Drive", "Swerve · 4 modules"],
       ["Control", "WPILib + AdvantageKit"],
@@ -146,12 +164,121 @@ const PROJECTS = [
   },
 
   {
+    slug: "uwb",
+    repo: null,                 /* the firmware and server aren't public */
+    name: "UWB",
+    title: "Ultra-wideband localization for lunar rovers",
+    kind: "Research",
+    period: "2026",
+    status: "IEEE-format paper",
+    stage: "research",
+    accent: "#5cd0b3",
+    /* The opening of the research section. */
+    kicker: "University of Florida · SSTP research",
+    headline: "Centimeters, on the Moon.",
+    summary:
+      "There's no GPS on the lunar surface, and dead reckoning drifts as wheels " +
+      "slip in regolith. Ultra-wideband radio can place a rover to the " +
+      "centimeter — until something gets between it and an anchor. I built a " +
+      "four-anchor rig and measured exactly how much.",
+    paperTitle: "Evaluating UWB TWR-Based Localization for Lunar Rovers Under Physical Obstructions",
+    paper: "dorfman-2026-uwb-lunar-localization.pdf",   /* from media/uwb/; linked from the title and the tail */
+    paperPages: 7,
+    /* The scroll story. Six chapters, in order; the 3D scene is choreographed
+       to them, so keep the count and the order. */
+    chapters: [
+      {
+        title: "No GPS on the Moon.",
+        body: "No satellite constellation serves the lunar surface, and dead reckoning drifts as wheels slip on regolith. A rover building a base needs its position to the centimeter, from infrastructure it carries in.",
+      },
+      {
+        title: "A radio with a stopwatch.",
+        body: "Ultra-wideband sends pulses a couple of nanoseconds wide. Time one round trip to an anchor and you have the distance. Every node pairs an ESP32-S3 with a Qorvo DW3000 in a 3D-printed enclosure.",
+        eq: "d = c · Δt ⁄ 2",
+        chips: ["Qorvo DW3000", "ESP32-S3", "Channel 9 · 8 GHz", "6.8 Mbps", "Double-sided TWR"],
+      },
+      {
+        title: "Four anchors. One tag.",
+        body: "Anchors stand at four deliberately different heights around a 1.56 m bench, so height can be observed at all. The tag ranges to each of them and solves its own position on board, nine times a second.",
+        chips: ["GDOP 2.02", "9.2 Hz fixes", "Wi-Fi telemetry"],
+      },
+      {
+        title: "Every range is a sphere.",
+        body: "A range says how far, never which way. Each one puts the tag somewhere on a sphere around its anchor. Three spheres meet at two points; the fourth picks one.",
+        eq: "(x − xᵢ)² + (y − yᵢ)² + (z − zᵢ)² = dᵢ²",
+      },
+      {
+        title: "Least squares finds the point.",
+        body: "Real ranges are noisy, so the spheres never quite meet. A warm-started Levenberg–Marquardt solver walks to the point that disagrees with all four the least. On a clear line: 5.1 cm.",
+        eq: "p* = argmin Σ rᵢ(p)²",
+      },
+      {
+        title: "Then something gets in the way.",
+        body: "A concrete block on one link and the pulse arrives late. That range swells, its sphere grows, and the solver — which never lost the signal — quietly moves the tag.",
+      },
+    ],
+    /* Materials, in the order the charts list them. Colours run cool to hot. */
+    materials: [
+      { id: "baseline", label: "Clear line", short: "Clear", color: "#8ea4bf" },
+      { id: "empty-container", label: "Empty container", short: "Empty", color: "#f3dc84", density: "~2" },
+      { id: "foil", label: "Aluminium foil", short: "Foil", color: "#f5c04f", density: "~2" },
+      { id: "sand", label: "Sand (regolith analog)", short: "Sand", color: "#f59a45", density: "~1500" },
+      { id: "paver", label: "Paver stone", short: "Paver", color: "#f06d3d", density: "~2000" },
+      { id: "concrete", label: "Concrete block", short: "Concrete", color: "#ec4b3f", density: "~2100" },
+    ],
+    /* Anchor colours, from the presentation's animations. */
+    anchorColors: ["#5cd0b3", "#ffe94d", "#ff862f", "#d147bd"],
+    findings: [
+      {
+        verdict: "Supported",
+        title: "Density drives it.",
+        body: "Error climbed with material class — sand, then paver, then concrete at 47.8 cm, nine times the clear baseline.",
+      },
+      {
+        verdict: "Rejected",
+        title: "Reflectivity doesn't.",
+        body: "Foil, the most reflective thing tested, beat every solid: two 16 µm layers add almost no path. It mostly raised the scatter, not the bias.",
+      },
+      {
+        verdict: "Lunar",
+        title: "Regolith costs decimeters.",
+        body: "Sand, the regolith analog, pushed error to 17.3 cm — enough to matter for a rover shadowed by, or half-buried in, the surface.",
+      },
+      {
+        verdict: "Next",
+        title: "Catch the late link.",
+        body: "The damage lives in one link's bias, so flag and de-weight any range whose residual departs from the rest — and avoid short anchor baselines in any direction.",
+      },
+    ],
+    specs: [
+      ["Nodes", "Makerfabs MaUWB ESP32-S3"],
+      ["Radio", "Qorvo DW3000 · ch 9 · 6.8 Mbps"],
+      ["Ranging", "Double-sided two-way ranging"],
+      ["Solver", "On-board Levenberg–Marquardt"],
+      ["Telemetry", "Wi-Fi → Python server · 9.2 Hz"],
+      ["Firmware", "PlatformIO · OTA updates"],
+      ["Trials", "21 · 5 materials × 4 anchors + clear"],
+    ],
+    notes: [],
+    links: [],
+    media: [
+      img("uwb_assem.webp", "One node: MaUWB ESP32-S3 in its printed enclosure, OLED telemetry up top", CAD),
+      img("env.webp", "The anchor constellation — four nodes at deliberately non-coplanar heights", CAD),
+      img("clamp.webp", "Edge clamp that screws onto a bench corner to hold a node or a mast", CAD),
+      img("tripod_clamp.webp", "Mast clamp, in place on the bench", CAD),
+      img("adapter.webp", "Dovetail adapter for mounting a node", CAD),
+    ],
+  },
+
+  {
     slug: "ramusic",
     repo: "ramusic",
     title: "spotify-tv-jam + RAMTECH OS",
     kind: "Full stack",
     period: "2026",
     status: "v1.0.15",
+    accent: "#a3e635",
+    motif: "media",
     summary:
       "A full-screen listening-party dashboard for a TV, and the operating system " +
       "it boots into. Guests scan a QR on screen, land in the Spotify Jam, and " +
@@ -185,6 +312,8 @@ const PROJECTS = [
     kind: "Robotics",
     period: "2024",
     status: "Complete",
+    accent: "#a78bfa",
+    motif: "swarm",
     summary:
       "Menu-driven control for three DJI Tello EDU drones on a shared swarm " +
       "network — scripted liftoff, choreographed shows, and the safety controls " +
@@ -211,6 +340,8 @@ const PROJECTS = [
     kind: "Robot code",
     period: "2025",
     status: "Season complete",
+    accent: "#ff5d6c",
+    motif: "path",
     summary:
       "Last season's competition code, and the two offseason rewrites that " +
       "followed it. The groundwork the 2026 architecture was built on.",
@@ -238,6 +369,8 @@ const PROJECTS = [
     kind: "Infrastructure",
     period: "2024",
     status: "In use",
+    accent: "#60a5fa",
+    motif: "records",
     summary:
       "Shell tooling that manages DNS records from a terminal instead of a " +
       "provider dashboard — because hand-editing a zone is how you get a typo " +
@@ -260,14 +393,17 @@ const PROJECTS = [
     kind: "Web",
     period: "2026",
     status: "This page",
+    accent: "#22d3ee",
+    motif: "minimap",
     summary:
-      "This site. One page, no build step, no dependencies — it renders fully " +
-      "offline from a content file and enriches itself from the GitHub API when " +
-      "it can reach it.",
+      "This site. No build step and no framework — a content file, a scroll " +
+      "engine, and three.js for the scenes. It renders fully offline and " +
+      "enriches itself from the GitHub API when it can reach it.",
     specs: [
-      ["Build", "None — static HTML"],
+      ["Build", "None — static files"],
       ["Content", "One editable data file"],
-      ["Media", "Images · video · YouTube"],
+      ["Motion", "Scroll-driven, sticky scenes"],
+      ["3D", "three.js · Draco"],
       ["Hosting", "GitHub Pages"],
     ],
     notes: [],
@@ -276,11 +412,12 @@ const PROJECTS = [
   },
 ];
 
-/* Grouped capability lists, shown as a spec table near the end. */
+/* Grouped capability lists. Each row scrolls across the page. */
 const STACK = [
   ["Robotics", "Java · WPILib · AdvantageKit · Phoenix 6 · PathPlanner · PhotonVision · AdvantageScope"],
+  ["Embedded", "ESP32-S3 · Qorvo DW3000 · PlatformIO · OTA firmware · SolidWorks"],
   ["Infrastructure", "Proxmox VE · Docker · Debian · Caddy · Cloudflare · RustDesk · ntfy"],
-  ["Software", "JavaScript · Node.js · Python · Bash · PowerShell"],
+  ["Software", "JavaScript · Node.js · Python · three.js · Bash · PowerShell"],
   ["Hardware", "Bambu Lab · OrcaSlicer · DJI Tello EDU · 3D-printed fixtures"],
 ];
 

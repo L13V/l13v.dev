@@ -6,6 +6,7 @@ project's `slug` in [`../projects.js`](../projects.js).
 ```
 media/
   2026_59/       FRC 59 2026 robot
+  uwb/           UWB localization research (models, trial data, CAD renders)
   ramusic/       spotify-tv-jam + RAMTECH OS
   tello-edus/    drone swarm toolkit
   2025_59_v2/    FRC 59 2025 robot
@@ -99,3 +100,31 @@ Set nothing and it falls back to one of two cases, decided automatically:
 
 So dropping in a SolidWorks export still looks right, and so does an artist's
 scene. Neither needs a setting changed.
+
+## uwb/
+
+Everything the research section draws comes from here:
+
+| file | what it is |
+|---|---|
+| `node.glb` | one UWB node (`UWB_Assem.glb`), 328 KB → 27 KB with Draco |
+| `rig.glb` | the bench with all four anchors (`Environment_Assem.glb`), 3.5 MB → 66 KB |
+| `trials.js` | all 21 canonical trials: every logged fix as an error in mm, plus each trial's summary |
+| `*.webp` | the CAD renders shown under "See the hardware" |
+| `dorfman-2026-uwb-lunar-localization.pdf` | the paper, built from `conference_101719.tex`; `paper:` in `projects.js` links it |
+
+Both models were compressed the same way as Rico:
+
+```bash
+npx @gltf-transform/cli optimize Environment_Assem.glb rig.glb --compress draco --simplify true --simplify-error 0.0004
+npx @gltf-transform/cli optimize UWB_Assem.glb node.glb --compress draco --simplify true --simplify-error 0.0002
+```
+
+The SolidWorks export stops at the tripod-holder clamps, so the two carbon
+masts that carry A1 and A3 are drawn by `stage.js`, not loaded.
+
+`trials.js` was generated from the research `Results/` folder: the final take
+of each material × anchor cell (25 recordings → 21 trials, as in the paper),
+errors in mm in the paper's frame. The charts, the regression and the replay
+all compute from it, so the numbers on the page can't drift from the data —
+the fit comes out at RMSE ≈ 5.8 cm + 0.998·Δd, r = 0.92, exactly as published.
