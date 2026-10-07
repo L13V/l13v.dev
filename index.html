@@ -64,8 +64,15 @@ header{
   backdrop-filter:blur(14px) saturate(140%); -webkit-backdrop-filter:blur(14px) saturate(140%);
   border-bottom:1px solid var(--line);
 }
-.hd{display:flex; align-items:center; gap:1rem; min-height:60px; flex-wrap:wrap}
-.hd-lead{display:flex; align-items:center; gap:.6rem; min-width:0}
+.hd{display:flex; align-items:center; gap:.4rem 1rem; min-height:60px; flex-wrap:wrap}
+.hd-lead{
+  display:flex; align-items:center; gap:.6rem; min-width:0;
+  /* At the top the big heading is the name, so the bar's name block takes no
+     room at all; it opens up (dot, name, divider) once that heading is gone. */
+  max-width:0; overflow:hidden; opacity:0;
+  transition:max-width .45s cubic-bezier(.2,.7,.2,1), opacity .3s ease;
+}
+header.named .hd-lead{max-width:16rem; opacity:1}
 .hd-name{
   font-weight:700; letter-spacing:-.02em; font-size:.98rem; margin:0; white-space:nowrap;
   /* Hand-off: while the big heading is on screen this is hidden, and it eases
@@ -78,7 +85,8 @@ header.named .hd-name{opacity:1; transform:none}
 .hd-name em{font-style:normal; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
 .dot{width:7px; height:7px; border-radius:50%; background:var(--a-lime); box-shadow:0 0 0 0 rgba(163,230,53,.6); animation:ping 2.4s ease-out infinite; flex:none}
 @keyframes ping{0%{box-shadow:0 0 0 0 rgba(163,230,53,.55)}70%{box-shadow:0 0 0 9px rgba(163,230,53,0)}100%{box-shadow:0 0 0 0 rgba(163,230,53,0)}}
-.hd-role{font-family:var(--mono); font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-3); padding-left:1rem; border-left:1px solid var(--line); }
+.hd-role{font-family:var(--mono); font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-3); margin-left:-1rem; padding-left:0; border-left:1px solid transparent; transition:margin .45s cubic-bezier(.2,.7,.2,1), padding .45s cubic-bezier(.2,.7,.2,1), border-color .3s ease}
+header.named .hd-role{margin-left:0; padding-left:1rem; border-left-color:var(--line)}
 .hd nav{margin-left:auto; display:flex; gap:1.4rem; flex-wrap:wrap}
 .hd nav a{font-family:var(--mono); font-size:.68rem; letter-spacing:.11em; text-transform:uppercase; color:var(--fg-2); text-decoration:none; position:relative; padding-block:.3rem}
 .hd nav a::after{content:""; position:absolute; left:0; right:100%; bottom:0; height:1.5px; background:var(--grad); transition:right .32s cubic-bezier(.2,.7,.2,1)}
